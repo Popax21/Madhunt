@@ -1,6 +1,6 @@
 - Name: Madhunt
   Version: 2.0.0
-  DLL: MadhuntCode/bin/Debug/net452/Madhunt.dll
+  DLL: Madhunt.dll
   Dependencies:
     - Name: Everest
       Version: 1.0.0
