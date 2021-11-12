@@ -8,7 +8,6 @@ using Celeste.Mod.CelesteNet.Client.Entities;
 using Celeste.Mod.CelesteNet.DataTypes;
 
 using MonoMod.RuntimeDetour;
-using MonoMod.Utils;
 
 namespace Celeste.Mod.Madhunt {
     public class Manager : GameComponent {
@@ -120,10 +119,6 @@ namespace Celeste.Mod.Madhunt {
 
             ghostNameRenderHook = new Hook(typeof(GhostNameTag).GetMethod(nameof(GhostNameTag.Render)), (Action<Action<GhostNameTag>, GhostNameTag>) ((orig, nameTag) => {
                 if(!InRound || !(nameTag.Tracking is Ghost ghost) || State == GetGhostState(ghost.PlayerInfo)?.RoundState?.state) orig(nameTag);
-            }));
-
-            ghostEmoteRenderHook = new Hook(typeof(GhostEmote).GetMethod(nameof(GhostEmote.Render)), (Action<Action<GhostEmote>, GhostEmote>) ((orig, emote) => {
-                if(!InRound || emote.Value != "i:hover/idle" || !(emote.Tracking is Ghost ghost) || State == GetGhostState(ghost.PlayerInfo)?.RoundState?.state) orig(emote);
             }));
         }
 
