@@ -33,9 +33,7 @@ namespace Celeste.Mod.Madhunt {
 
         public Manager(Game game) : base(game) {
             //Get the Celeste.NET module
-            if((module = (CelesteNetClientModule) Everest.Modules.FirstOrDefault(m => m is CelesteNetClientModule)) == null) {
-                throw new Exception("Celeste.NET not loaded!");
-            }
+            if((module = (CelesteNetClientModule) Everest.Modules.FirstOrDefault(m => m is CelesteNetClientModule)) == null) throw new Exception("CelesteNET not loaded!");
 
             //Install hooks
             Everest.Events.Level.OnLoadLevel += levelLoadHook = (lvl, intro, fromLoader) => {
@@ -84,6 +82,12 @@ namespace Celeste.Mod.Madhunt {
 
                 //Register handlers
                 ctx.Client.Data.RegisterHandler<DataMadhuntStart>((con, data) => MainThreadHelper.Do(() => {
+                    //Check if the version is compatible
+                    if(data.MadhuntVersion.Major != Module.Instance.Metadata.Version.Major || data.MadhuntVersion.Minor != Module.Instance.Metadata.Version.Minor) {
+                        Logger.Log(LogLevel.Warn, Module.Name, $"Ignoring start packet with incompatible version {data.MadhuntVersion} vs installed {Module.Instance.Metadata.Version}");
+                        return;
+                    }
+
                     //Check if we should start
                     Session ses = (Celeste.Scene as Level)?.Session;
                     if(InRound || ses == null || ses.Area != data.RoundSettings.lobbyArea || ses.Level != data.RoundSettings.lobbyLevel) return;
@@ -167,6 +171,7 @@ namespace Celeste.Mod.Madhunt {
 
             //Send start packet
             module.Context.Client.Send<DataMadhuntStart>(new DataMadhuntStart() {
+                MadhuntVersion = Module.Instance.Metadata.Version,
                 StartPlayer = module.Context.Client.PlayerInfo,
                 RoundSettings = settings,
                 StartZoneID = startZoneID
