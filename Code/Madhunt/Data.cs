@@ -1,3 +1,5 @@
+using System;
+
 using Microsoft.Xna.Framework;
 using Celeste.Mod.CelesteNet;
 using Celeste.Mod.CelesteNet.DataTypes;
@@ -12,7 +14,7 @@ namespace Celeste.Mod.Madhunt {
         public string spawnLevel;
         public byte spawnIndex;
 
-        public string RoundID => $"{arenaArea.SID}#{arenaArea.Mode}#{spawnLevel}#{spawnIndex}";
+        public string RoundID => $"{arenaArea.SID}#{arenaArea.Mode}#{spawnLevel}#{spawnIndex}#{Module.Instance.Metadata.Version.Major}.{Module.Instance.Metadata.Version.Minor}";
     }
 
     public enum PlayerState {
@@ -21,15 +23,18 @@ namespace Celeste.Mod.Madhunt {
     
     public class DataMadhuntStart : DataType<DataMadhuntStart> {
         static DataMadhuntStart() => DataType<DataMadhuntStart>.DataID = "madhuntStart";
+        
+        public Version MadhuntVersion;
         public DataPlayerInfo StartPlayer;
         public RoundSettings RoundSettings;
         public int? StartZoneID;
-
         public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerUpdate(StartPlayer) };
 
         public override void FixupMeta(DataContext ctx) => StartPlayer = Get<MetaPlayerUpdate>(ctx).Player;
 
         public override void Read(CelesteNetBinaryReader reader) {
+            MadhuntVersion = new Version(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
+
             RoundSettings.lobbyArea.SID = reader.ReadNetString();
             RoundSettings.lobbyArea.Mode = (AreaMode) reader.ReadByte();
             RoundSettings.lobbyLevel = reader.ReadNetString();
@@ -44,6 +49,10 @@ namespace Celeste.Mod.Madhunt {
         }
 
         public override void Write(CelesteNetBinaryWriter writer) {
+            writer.Write(MadhuntVersion.Major);
+            writer.Write(MadhuntVersion.Minor);
+            writer.Write(MadhuntVersion.Revision);
+            
             writer.WriteNetString(RoundSettings.lobbyArea.SID);
             writer.Write((byte) RoundSettings.lobbyArea.Mode);
             writer.WriteNetString(RoundSettings.lobbyLevel);
