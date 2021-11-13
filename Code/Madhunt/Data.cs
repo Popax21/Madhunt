@@ -24,7 +24,7 @@ namespace Celeste.Mod.Madhunt {
     public class DataMadhuntStart : DataType<DataMadhuntStart> {
         static DataMadhuntStart() => DataType<DataMadhuntStart>.DataID = "madhuntStart";
         
-        public Version MadhuntVersion;
+        public int MajorVersion, MinorVersion;
         public DataPlayerInfo StartPlayer;
         public RoundSettings RoundSettings;
         public int? StartZoneID;
@@ -33,7 +33,8 @@ namespace Celeste.Mod.Madhunt {
         public override void FixupMeta(DataContext ctx) => StartPlayer = Get<MetaPlayerUpdate>(ctx).Player;
 
         public override void Read(CelesteNetBinaryReader reader) {
-            MadhuntVersion = new Version(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
+            MajorVersion = reader.ReadInt32();
+            MinorVersion = reader.ReadInt32();
 
             RoundSettings.lobbyArea.SID = reader.ReadNetString();
             RoundSettings.lobbyArea.Mode = (AreaMode) reader.ReadByte();
@@ -49,9 +50,8 @@ namespace Celeste.Mod.Madhunt {
         }
 
         public override void Write(CelesteNetBinaryWriter writer) {
-            writer.Write(MadhuntVersion.Major);
-            writer.Write(MadhuntVersion.Minor);
-            writer.Write(MadhuntVersion.Revision);
+            writer.Write(MajorVersion);
+            writer.Write(MinorVersion);
             
             writer.WriteNetString(RoundSettings.lobbyArea.SID);
             writer.Write((byte) RoundSettings.lobbyArea.Mode);
