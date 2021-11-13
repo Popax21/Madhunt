@@ -208,8 +208,14 @@ namespace Celeste.Mod.Madhunt {
         private void CheckRoundEnd(bool endIfEmpty = true, Action<bool> callback = null) {
             if(!InRound) return;
 
-            //Check for other hider ghosts
-            if(!(endIfEmpty || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID)) || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) {
+            //Check if there are any hider or seeker ghosts
+            if(
+                !(endIfEmpty || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID)) || 
+                (
+                    (State == PlayerState.HIDER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) &&
+                    (State == PlayerState.SEEKER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.SEEKER))
+                )
+            ) {
                 roundState.isWinner = false;
                 callback?.Invoke(false);
                 return;
