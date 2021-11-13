@@ -83,8 +83,8 @@ namespace Celeste.Mod.Madhunt {
                 //Register handlers
                 ctx.Client.Data.RegisterHandler<DataMadhuntStart>((con, data) => MainThreadHelper.Do(() => {
                     //Check if the version is compatible
-                    if(data.MadhuntVersion.Major != Module.Instance.Metadata.Version.Major || data.MadhuntVersion.Minor != Module.Instance.Metadata.Version.Minor) {
-                        Logger.Log(LogLevel.Warn, Module.Name, $"Ignoring start packet with incompatible version {data.MadhuntVersion} vs installed {Module.Instance.Metadata.Version}");
+                    if(data.MajorVersion != Module.Instance.Metadata.Version.Major || data.MinorVersion != Module.Instance.Metadata.Version.Minor) {
+                        Logger.Log(LogLevel.Warn, Module.Name, $"Ignoring start packet with incompatible version {data.MajorVersion}.{data.MinorVersion} vs installed {Module.Instance.Metadata.Version}");
                         return;
                     }
 
@@ -171,7 +171,8 @@ namespace Celeste.Mod.Madhunt {
 
             //Send start packet
             module.Context.Client.Send<DataMadhuntStart>(new DataMadhuntStart() {
-                MadhuntVersion = Module.Instance.Metadata.Version,
+                MajorVersion = Module.Instance.Metadata.Version.Major,
+                MinorVersion = Module.Instance.Metadata.Version.Minor,
                 StartPlayer = module.Context.Client.PlayerInfo,
                 RoundSettings = settings,
                 StartZoneID = startZoneID
