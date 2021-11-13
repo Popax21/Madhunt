@@ -1,0 +1,15 @@
+name: Send announcment message for new releases in the Madhunt server
+on: 
+  release:
+    types:
+      - created
+jobs:
+  run_main:
+    runs-on: ubuntu-18.04
+    name: Send message
+    steps:
+      - name: Send message
+        uses: nhevia/discord-styled-releases@main
+        with:
+          webhook_id: ${{ secrets.DISCORD_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
