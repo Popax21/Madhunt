@@ -1,5 +1,6 @@
 ---------- CHANGELOG VERSION 1.2.1 ----------
 - Fixed a fatal flaw in v1.2 causing all maps to break
 
-This is also a test of the automatic publishing system
+This is also a test of the automatic publishing systemEnter changelog for version 1.2.1 here
+
 
