@@ -1,0 +1,28 @@
+name: Publish update
+on:
+  push:
+    branches: [ releases ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2 
+      - name: Download Everest stripped lib
+        uses: coloursofnoise/get-azure-pipelines-artifact@v0.0.3
+        with:
+          repository: EverestAPI/Everest
+          definitionId: 3
+          artifact: lib-stripped
+          reasonFilter: 'individualCI'
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.x
+      - run: |
+          cp -r ${{ github.workspace }}/lib-stripped Celeste
+          mkdir Celeste/Mods
+          cp -r ${{ github.workspace }} Celeste/Mods/Madhunt
+          cd Celeste/Mods/Madhunt
+          echo "${{ github.event.head_commit.body }}" > .clog
+          ./publishUpdate.sh "${{ github.event.head_commit.title }}" .clog
+          
