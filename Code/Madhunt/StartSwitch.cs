@@ -28,7 +28,7 @@ namespace Celeste.Mod.Madhunt {
                 if(startCooldown <= 0f) {
                     //Choose a random arena option
                     ArenaOption[] opts = Scene.Tracker.GetEntities<ArenaOption>().Cast<ArenaOption>().Where(o => o.SwitchID == SwitchID).ToArray();
-                    ArenaOption opt = Calc.Random.Choose(opts);
+                    ArenaOption opt = (opts.Length > 0) ? Calc.Random.Choose(opts) : null;
 
                     //Start the manhunt
                     if(opt == null || !Module.MadhuntManager.StartRound(opt.GenerateRoundSettings(), CollideFirst<StartZone>()?.ID)) Scene.Tracker.GetEntity<Player>().Die(Vector2.Zero, true);
