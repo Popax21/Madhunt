@@ -32,7 +32,7 @@ namespace Celeste.Mod.Madhunt {
 
         public override void FixupMeta(DataContext ctx) => StartPlayer = Get<MetaPlayerUpdate>(ctx).Player;
 
-        public override void Read(CelesteNetBinaryReader reader) {
+        protected override void Read(CelesteNetBinaryReader reader) {
             MajorVersion = reader.ReadInt32();
             MinorVersion = reader.ReadInt32();
 
@@ -49,7 +49,7 @@ namespace Celeste.Mod.Madhunt {
             StartZoneID = reader.ReadBoolean() ? (int?) reader.ReadInt32() : null;
         }
 
-        public override void Write(CelesteNetBinaryWriter writer) {
+        protected override void Write(CelesteNetBinaryWriter writer) {
             writer.Write(MajorVersion);
             writer.Write(MinorVersion);
             
@@ -82,12 +82,12 @@ namespace Celeste.Mod.Madhunt {
             Get<MetaBoundRef>(ctx).ID = Player?.ID ?? uint.MaxValue;
         }
 
-        public override void Read(CelesteNetBinaryReader reader) {
+        protected override void Read(CelesteNetBinaryReader reader) {
             if(reader.ReadBoolean()) RoundState = (reader.ReadNetString(), (PlayerState) reader.ReadByte());
             else RoundState = null;
         }
 
-        public override void Write(CelesteNetBinaryWriter writer) {
+        protected override void Write(CelesteNetBinaryWriter writer) {
             writer.Write(RoundState != null);
             if(RoundState != null) {
                 writer.WriteNetString(RoundState.Value.roundID);
