@@ -9,6 +9,7 @@ using Celeste.Mod.CelesteNet;
 using Celeste.Mod.CelesteNet.Client;
 using Celeste.Mod.CelesteNet.Client.Entities;
 using Celeste.Mod.CelesteNet.DataTypes;
+using System.Reflection;
 
 namespace Celeste.Mod.Madhunt {
     public class Manager : GameComponent {
@@ -22,9 +23,10 @@ namespace Celeste.Mod.Madhunt {
         private Everest.Events.Level.LoadLevelHandler levelLoadHook;
         private Everest.Events.Level.ExitHandler exitHook;
         private On.Celeste.Level.hook_LoadNewPlayer playerLoadHook;
+        private On.Celeste.Level.hook_EnforceBounds enforceBoundsHook;
 
         private CelesteNetClientModule module;
-        private Action<Object> initHook, disposeHook;
+        private Delegate initHook, disposeHook;
         private Hook ghostPlayerCollisionHook, ghostNameRenderHook, ghostEmoteRenderHook;
 
         private RoundState roundState = null;
@@ -37,7 +39,7 @@ namespace Celeste.Mod.Madhunt {
             //Get the Celeste.NET module
             if((module = (CelesteNetClientModule) Everest.Modules.FirstOrDefault(m => m is CelesteNetClientModule)) == null) throw new Exception("CelesteNET not loaded!");
 
-            //Install hooks
+            //Install Celeste hooks
             Everest.Events.Level.OnLoadLevel += levelLoadHook = (lvl, intro, fromLoader) => {
                 //Disable save and quit when in a round
                 if(InRound) lvl.SaveQuitDisabled = true;
@@ -78,15 +80,33 @@ namespace Celeste.Mod.Madhunt {
                     throw;
                 }
             };
-
-            CelesteNetClientContext.OnInit += initHook = c => {
-                CelesteNetClientContext ctx = (CelesteNetClientContext) c;
-
-                //Register handlers
-                ctx.Client.Data.RegisterHandlersIn(this);
+            On.Celeste.Level.EnforceBounds += enforceBoundsHook = (orig, level, player) => {
+                orig(level, player);
+                if(level.Transitioning || !InRound)
+                    return;
+                
+                if(player.Top < level.Bounds.Top && !level.Session.MapData.CanTransitionTo(level, player.TopCenter - Vector2.UnitY*12f)) {
+                    player.Top = level.Bounds.Top;
+                    player.OnBoundsV();
+                }
             };
-            CelesteNetClientContext.OnDispose += disposeHook = _ => StopRound();
+
+            //Install CelesteNet context hooks
+            EventInfo initEvt = typeof(CelesteNetClientContext).GetEvent("OnInit");
+            if(initEvt.EventHandlerType.GenericTypeArguments[0] == typeof(CelesteNetClientContext)) {
+                initEvt.AddEventHandler(null, initHook = (Action<CelesteNetClientContext>) (_ => module.Context.Client.Data.RegisterHandlersIn(this)));
+            } else {
+                initEvt.AddEventHandler(null, initHook = (Action<object>) (_ => module.Context.Client.Data.RegisterHandlersIn(this)));
+            }
+
+            EventInfo disposeEvt = typeof(CelesteNetClientContext).GetEvent("OnDispose");
+            if(disposeEvt.EventHandlerType.GenericTypeArguments[0] == typeof(CelesteNetClientContext)) {
+                disposeEvt.AddEventHandler(null, disposeHook = (Action<CelesteNetClientContext>) (_ => StopRound()));
+            } else {
+                disposeEvt.AddEventHandler(null, disposeHook = (Action<object>) (_ => StopRound()));
+            }
             
+            //Install CelesteNet ghost hooks
             ghostPlayerCollisionHook = new Hook(typeof(Ghost).GetMethod(nameof(Ghost.OnPlayer)), (Action<Action<Ghost, Player>, Ghost, Player>) ((orig, ghost, player) => {
                 //Check if we collided with a seeker ghost as a hider
                 DataMadhuntStateUpdate ghostState = GetGhostState(ghost.PlayerInfo);
@@ -121,10 +141,13 @@ namespace Celeste.Mod.Madhunt {
             if(playerLoadHook != null) On.Celeste.Level.LoadNewPlayer -= playerLoadHook;
             playerLoadHook = null;
 
-            if(initHook != null) CelesteNetClientContext.OnInit -= initHook;
+            if(enforceBoundsHook != null) On.Celeste.Level.EnforceBounds -= enforceBoundsHook;
+            enforceBoundsHook = null;
+
+            if(initHook != null) typeof(CelesteNetClientContext).GetEvent("OnInit").RemoveEventHandler(null, initHook);
             initHook = null;
 
-            if(disposeHook != null) CelesteNetClientContext.OnDispose -= disposeHook;
+            if(disposeHook != null) typeof(CelesteNetClientContext).GetEvent("OnDispose").RemoveEventHandler(null, disposeHook);
             disposeHook = null;
 
             if(ghostPlayerCollisionHook != null) ghostPlayerCollisionHook.Dispose();
