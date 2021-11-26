@@ -257,6 +257,16 @@ namespace Celeste.Mod.Madhunt {
             RespawnInLobby(state);
         }
 
+        public void TriggerGlobalWin(PlayerState winningState) {
+            if(!InRound) return;
+            Logger.Log(Module.Name, $"Triggering global win for state {winningState} in Madhunt {roundState.settings.RoundID}");
+            module?.Client?.SendAndHandle(new DataMadhuntRoundEnd() {
+                EndPlayer = module.Client.PlayerInfo,
+                RoundID = roundState.settings.RoundID,
+                WinningState = winningState
+            });
+        }
+
         private void CheckRoundEnd(bool endIfEmpty = true, Action<bool> callback = null) {
             if(!InRound) return;
 
@@ -322,24 +332,36 @@ namespace Celeste.Mod.Madhunt {
         public void Handle(CelesteNetConnection con, DataMadhuntStart data) {
             //Check if the version is compatible
             if(data.MajorVersion != Module.Instance.Metadata.Version.Major || data.MinorVersion != Module.Instance.Metadata.Version.Minor) {
-                Logger.Log(LogLevel.Warn, Module.Name, $"Ignoring start packet with incompatible version {data.MajorVersion}.{data.MinorVersion} vs installed {Module.Instance.Metadata.Version}");
+                Logger.Log(LogLevel.Warn, Module.Name, $"Ignoring Madhunt start packet with incompatible version {data.MajorVersion}.{data.MinorVersion} vs installed {Module.Instance.Metadata.Version}");
                 return;
             }
 
-            //Check if we should start
-            Session ses = (Celeste.Scene as Level)?.Session;
-            if(InRound || ses == null || ses.Area != data.RoundSettings.lobbyArea || ses.Level != data.RoundSettings.lobbyLevel) return;
-            
-            //Check if the zone ID matches
-            if(data.StartZoneID.HasValue && data.StartZoneID != Celeste.Scene.Tracker.GetEntity<Player>()?.CollideFirst<StartZone>()?.ID) return;
+            updateQueue.Enqueue(() => {
+                //Check if we should start
+                Session ses = (Celeste.Scene as Level)?.Session;
+                if(InRound || ses == null || ses.Area != data.RoundSettings.lobbyArea || ses.Level != data.RoundSettings.lobbyLevel) return;
+                
+                //Check if the zone ID matches
+                if(data.StartZoneID.HasValue && data.StartZoneID != Celeste.Scene.Tracker.GetEntity<Player>()?.CollideFirst<StartZone>()?.ID) return;
 
-            //Start the madhunt
-            updateQueue.Enqueue(() => StartInternal(data.RoundSettings));
+                //Start the madhunt
+                updateQueue.Enqueue(() => StartInternal(data.RoundSettings));
+            });
         }
         
+        public void Handle(CelesteNetConnection con, DataMadhuntRoundEnd data) {
+            updateQueue.Enqueue(() => {
+                if(roundState == null || data.RoundID != roundState.settings.RoundID) return;
+                roundState.isWinner = (State == data.WinningState);
+                StopRound();
+            });
+        }
+
         public void Handle(CelesteNetConnection con, DataMadhuntStateUpdate data) {
-            if(roundState != null && data.RoundState?.roundID == roundState.settings.RoundID) roundState.othersJoined = true;
-            updateQueue.Enqueue(() => CheckRoundEnd(roundState?.othersJoined ?? false));
+            updateQueue.Enqueue(() => {
+                if(roundState != null && data.RoundState?.roundID == roundState.settings.RoundID) roundState.othersJoined = true;
+                CheckRoundEnd(roundState?.othersJoined ?? false);
+            });
         }
         
         public void Handle(CelesteNetConnection con, DataPlayerInfo data) => MainThreadHelper.Do(() => CheckRoundEnd());

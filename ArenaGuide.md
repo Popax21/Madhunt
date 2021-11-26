@@ -5,6 +5,7 @@ A Madhunt map consists of the following parts:
   * Make sure the player spawns here!
 * The arena(s)
   * Don't contain any special entites other than Hider/Seeker Spawn Points.
+  * Can optionaly contain gameplay entities like Hider Win Hearts
 
 Each of these has to be setup with different custom entites provided by this mod.
 
@@ -37,3 +38,6 @@ Describes one possible arena where a switch can send you. Adding multiple of the
 Provides the location either hiders or seekers spawn in the arena. However, these are only used initialy and when a hider turns into a seeker, regular "Change Respawn" triggers still work!
 
 `spawnIndex`: The index of this spawn point. Matched against the Arena Option's index.
+
+## Hider Win Heart
+Can only be collected by hiders. When collected, makes all hiders in the current round win.

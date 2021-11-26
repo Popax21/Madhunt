@@ -25,14 +25,14 @@ namespace Celeste.Mod.Madhunt {
     }
     
     public class DataMadhuntStart : DataType<DataMadhuntStart> {
-        static DataMadhuntStart() => DataType<DataMadhuntStart>.DataID = "madhuntStart";
+        static DataMadhuntStart() => DataID = "madhuntStart";
         
         public int MajorVersion, MinorVersion;
         public DataPlayerInfo StartPlayer;
         public RoundSettings RoundSettings;
         public int? StartZoneID;
-        public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerUpdate(StartPlayer) };
 
+        public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerUpdate(StartPlayer) };
         public override void FixupMeta(DataContext ctx) => StartPlayer = Get<MetaPlayerUpdate>(ctx).Player;
 
         protected override void Read(CelesteNetBinaryReader reader) {
@@ -79,8 +79,29 @@ namespace Celeste.Mod.Madhunt {
         }
     }
 
+    public class DataMadhuntRoundEnd : DataType<DataMadhuntRoundEnd> {
+        static DataMadhuntRoundEnd() => DataID = "madhuntRoundEnd";
+
+        public DataPlayerInfo EndPlayer;
+        public string RoundID;
+        public PlayerState WinningState;
+
+        public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerUpdate(EndPlayer) };
+        public override void FixupMeta(DataContext ctx) => EndPlayer = Get<MetaPlayerUpdate>(ctx).Player;
+
+        protected override void Read(CelesteNetBinaryReader reader) {
+            RoundID = reader.ReadNetString();
+            WinningState = (PlayerState) reader.ReadByte();
+        }
+        
+        protected override void Write(CelesteNetBinaryWriter writer) {
+            writer.WriteNetString(RoundID);
+            writer.Write((byte) WinningState);
+        }
+    }
+
     public class DataMadhuntStateUpdate : DataType<DataMadhuntStateUpdate> {
-        static DataMadhuntStateUpdate() => DataType<DataMadhuntStateUpdate>.DataID = "madhuntStateUpdate";
+        static DataMadhuntStateUpdate() => DataID = "madhuntStateUpdate";
 
         public DataPlayerInfo Player;
         public (string roundID, int seed, PlayerState state)? RoundState;
