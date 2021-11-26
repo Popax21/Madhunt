@@ -118,7 +118,9 @@ namespace Celeste.Mod.Madhunt {
                 arenaArea = (data.Attr("arenaArea").Length > 0) ? ParseArea(data.Attr("arenaArea")) : ses.Area,
                 spawnLevel = data.Attr("spawnLevel"),
                 spawnIndex = (byte) spawnIndex,
-                initialSeekers = data.Int("initialSeekers", 1)
+                initialSeekers = data.Int("initialSeekers", 1),
+                tagMode = data.Bool("tagMode", true),
+                goldenMode = data.Bool("goldenMode", false)
             };
         }
 

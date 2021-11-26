@@ -13,7 +13,9 @@ namespace Celeste.Mod.Madhunt {
         public AreaKey arenaArea;
         public string spawnLevel;
         public byte spawnIndex;
+
         public int initialSeekers;
+        public bool tagMode, goldenMode;
 
         public string RoundID => $"{arenaArea.SID}#{arenaArea.Mode}#{spawnLevel}#{spawnIndex}#{Module.Instance.Metadata.Version.Major}.{Module.Instance.Metadata.Version.Minor}";
     }
@@ -48,6 +50,8 @@ namespace Celeste.Mod.Madhunt {
             RoundSettings.spawnIndex = reader.ReadByte();
 
             RoundSettings.initialSeekers = reader.ReadInt32();
+            RoundSettings.tagMode = reader.ReadBoolean();
+            RoundSettings.goldenMode = reader.ReadBoolean();
 
             StartZoneID = reader.ReadBoolean() ? (int?) reader.ReadInt32() : null;
         }
@@ -67,6 +71,8 @@ namespace Celeste.Mod.Madhunt {
             writer.Write(RoundSettings.spawnIndex);
 
             writer.Write(RoundSettings.initialSeekers);
+            writer.Write(RoundSettings.tagMode);
+            writer.Write(RoundSettings.goldenMode);
 
             writer.Write(StartZoneID.HasValue);
             if(StartZoneID.HasValue) writer.Write(StartZoneID.Value);

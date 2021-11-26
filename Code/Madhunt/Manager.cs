@@ -10,8 +10,10 @@ using Celeste.Mod.CelesteNet.Client;
 using Celeste.Mod.CelesteNet.Client.Entities;
 using Celeste.Mod.CelesteNet.DataTypes;
 using System.Reflection;
+using System.Collections.Concurrent;
 
 namespace Celeste.Mod.Madhunt {
+    //TODO Rewrite this to be modular and not a big blob of logic
     public class Manager : GameComponent {
         private class RoundState {
             public RoundSettings settings;
@@ -24,6 +26,7 @@ namespace Celeste.Mod.Madhunt {
         private Everest.Events.Level.ExitHandler exitHook;
         private On.Celeste.Level.hook_LoadNewPlayer playerLoadHook;
         private On.Celeste.Level.hook_EnforceBounds enforceBoundsHook;
+        private On.Celeste.Player.hook_Die dieHook;
 
         private CelesteNetClientModule module;
         private Delegate initHook, disposeHook;
@@ -32,8 +35,7 @@ namespace Celeste.Mod.Madhunt {
         private RoundState roundState = null;
         private Level arenaLoadLevel = null;
         private float startDelayTimer = -1f, startTimer = 0f;
-        //NOTE: DON'T USE QUEUES, OR EVEREST DECIDES TO DIE
-        private List<Action> updateQueue = new List<Action>(), prevUpdateQueue = new List<Action>();
+        private ConcurrentQueue<Action> updateQueue = new ConcurrentQueue<Action>(), prevUpdateQueue = new ConcurrentQueue<Action>();
 
         public Manager(Game game) : base(game) {
             //Get the Celeste.NET module
@@ -90,6 +92,18 @@ namespace Celeste.Mod.Madhunt {
                     player.OnBoundsV();
                 }
             };
+            On.Celeste.Player.Die += dieHook = (orig, player, dir, evenIfInvincible, registerDeath) => {
+                PlayerDeadBody body = orig(player, dir, evenIfInvincible, registerDeath);
+                if(body != null && InRound && roundState.settings.goldenMode && State == PlayerState.HIDER) {
+                    Action oldDeathAct = body.DeathAction;
+                    body.DeathAction = () => {
+                        oldDeathAct();
+                        State = PlayerState.SEEKER;
+                        CheckRoundEnd(false, ended => { if(!ended) RespawnInArena(); });
+                    };
+                }
+                return body;
+            };
 
             //Install CelesteNet context hooks
             EventInfo initEvt = typeof(CelesteNetClientContext).GetEvent("OnInit");
@@ -110,7 +124,7 @@ namespace Celeste.Mod.Madhunt {
             ghostPlayerCollisionHook = new Hook(typeof(Ghost).GetMethod(nameof(Ghost.OnPlayer)), (Action<Action<Ghost, Player>, Ghost, Player>) ((orig, ghost, player) => {
                 //Check if we collided with a seeker ghost as a hider
                 DataMadhuntStateUpdate ghostState = GetGhostState(ghost.PlayerInfo);
-                if(InRound && ghostState?.RoundState?.roundID == roundState.settings.RoundID) {
+                if(InRound && roundState.settings.tagMode && ghostState?.RoundState?.roundID == roundState.settings.RoundID) {
                     if(State == PlayerState.HIDER && ghostState?.RoundState?.state == PlayerState.SEEKER) {
                         //Check the start timer
                         if(startTimer > 0) return;
@@ -143,6 +157,9 @@ namespace Celeste.Mod.Madhunt {
 
             if(enforceBoundsHook != null) On.Celeste.Level.EnforceBounds -= enforceBoundsHook;
             enforceBoundsHook = null;
+
+            if(dieHook != null) On.Celeste.Player.Die -= dieHook;
+            dieHook = null;
 
             if(initHook != null) typeof(CelesteNetClientContext).GetEvent("OnInit").RemoveEventHandler(null, initHook);
             initHook = null;
@@ -193,7 +210,7 @@ namespace Celeste.Mod.Madhunt {
             }
 
             //Clear update queue
-            List<Action> queue = updateQueue;
+            ConcurrentQueue<Action> queue = updateQueue;
             updateQueue = prevUpdateQueue;
             prevUpdateQueue = queue;
             foreach(Action act in queue) act();
@@ -279,7 +296,7 @@ namespace Celeste.Mod.Madhunt {
                 ses.RespawnPoint = state.settings.lobbySpawnPoint;
                 ses.Inventory.DreamDash = state.isWinner;
                 Celeste.Scene = new LevelLoader(ses, ses.RespawnPoint);
-            } else updateQueue.Add(() => RespawnInLobby(state));
+            } else updateQueue.Enqueue(() => RespawnInLobby(state));
         }
 
         private void RespawnInArena() {
@@ -292,7 +309,7 @@ namespace Celeste.Mod.Madhunt {
                 LevelLoader loader = new LevelLoader(ses);
                 arenaLoadLevel = loader.Level;
                 Celeste.Scene = loader;
-            } else updateQueue.Add(() => RespawnInArena());
+            } else updateQueue.Enqueue(() => RespawnInArena());
         }
         
         private DataMadhuntStateUpdate GetGhostState(DataPlayerInfo info) {
@@ -317,12 +334,12 @@ namespace Celeste.Mod.Madhunt {
             if(data.StartZoneID.HasValue && data.StartZoneID != Celeste.Scene.Tracker.GetEntity<Player>()?.CollideFirst<StartZone>()?.ID) return;
 
             //Start the madhunt
-            StartInternal(data.RoundSettings);
+            updateQueue.Enqueue(() => StartInternal(data.RoundSettings));
         }
         
         public void Handle(CelesteNetConnection con, DataMadhuntStateUpdate data) {
             if(roundState != null && data.RoundState?.roundID == roundState.settings.RoundID) roundState.othersJoined = true;
-            MainThreadHelper.Do(() => CheckRoundEnd(roundState?.othersJoined ?? false));
+            updateQueue.Enqueue(() => CheckRoundEnd(roundState?.othersJoined ?? false));
         }
         
         public void Handle(CelesteNetConnection con, DataPlayerInfo data) => MainThreadHelper.Do(() => CheckRoundEnd());
