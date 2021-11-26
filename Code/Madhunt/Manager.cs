@@ -142,8 +142,8 @@ namespace Celeste.Mod.Madhunt {
             
             //Update start delay timer
             if(roundState != null && !InRound) {
-                startDelayTimer -= Engine.DeltaTime;
-                Engine.TimeRate *= (float) Math.Pow(0.05f, Engine.DeltaTime);
+                startDelayTimer -= Engine.RawDeltaTime;
+                Engine.TimeRate *= (float) Math.Pow(0.05f, Engine.RawDeltaTime);
 
                 if(startDelayTimer <= 0) {
                     //Determine and set the player state
