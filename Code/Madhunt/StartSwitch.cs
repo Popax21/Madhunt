@@ -40,7 +40,6 @@ namespace Celeste.Mod.Madhunt {
         private Sides side;
         private NameText nameText;
         private bool pressed = false;
-        private float startCooldown = 0.2f;
 
         public StartSwitch(EntityData data, Vector2 offset) : base(data.Position + offset, (Sides) data.Int("side"), false, false, new EntityID(data.Level.Name, data.ID), "mirror") {
             side = (Sides) data.Int("side");
@@ -65,16 +64,14 @@ namespace Celeste.Mod.Madhunt {
         }
 
         public override void Update() {
-            if(pressed && startCooldown > 0f) {
-                startCooldown -= Engine.DeltaTime;
-                if(startCooldown <= 0f) {
-                    //Choose a random arena option
-                    ArenaOption[] opts = Scene.Tracker.GetEntities<ArenaOption>().Cast<ArenaOption>().Where(o => o.SwitchID == SwitchID).ToArray();
-                    ArenaOption opt = (opts.Length > 0) ? Calc.Random.Choose(opts) : null;
+            if(pressed) {
+                //Choose a random arena option
+                ArenaOption[] opts = Scene.Tracker.GetEntities<ArenaOption>().Cast<ArenaOption>().Where(o => o.SwitchID == SwitchID).ToArray();
+                ArenaOption opt = (opts.Length > 0) ? Calc.Random.Choose(opts) : null;
 
-                    //Start the manhunt
-                    if(opt == null || !Module.MadhuntManager.StartRound(opt.GenerateRoundSettings(), CollideFirst<StartZone>()?.ID)) Scene.Tracker.GetEntity<Player>().Die(Vector2.Zero, true);
-                }
+                //Start the manhunt
+                if(opt == null || !Module.MadhuntManager.StartRound(opt.GenerateRoundSettings(), CollideFirst<StartZone>()?.ID)) Scene.Tracker.GetEntity<Player>().Die(Vector2.Zero, true);
+                pressed = false;
             }
             base.Update();
         }
@@ -120,7 +117,8 @@ namespace Celeste.Mod.Madhunt {
                 lobbySpawnPoint = ses.RespawnPoint ?? Vector2.Zero,
                 arenaArea = (data.Attr("arenaArea").Length > 0) ? ParseArea(data.Attr("arenaArea")) : ses.Area,
                 spawnLevel = data.Attr("spawnLevel"),
-                spawnIndex = (byte) spawnIndex
+                spawnIndex = (byte) spawnIndex,
+                initialSeekers = data.Int("initialSeekers", 1)
             };
         }
 

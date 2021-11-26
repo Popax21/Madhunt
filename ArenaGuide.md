@@ -27,6 +27,8 @@ Describes one possible arena where a switch can send you. Adding multiple of the
 
 `spawnIndex`: The index of the spawn points which will be used. Using negative numbers will randomize that number of indices, e.g. `-3` will randomize between indices `0`,`1` and `2`.
 
+`initialSeekers`: The number of initial seekers. Negative numbers indicate a number of initial hiders instead.
+
 ## Hider/Seeker Spawn Point
 Provides the location either hiders or seekers spawn in the arena. However, these are only used initialy and when a hider turns into a seeker, regular "Change Respawn" triggers still work!
 

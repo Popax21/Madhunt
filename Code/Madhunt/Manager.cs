@@ -29,7 +29,7 @@ namespace Celeste.Mod.Madhunt {
 
         private RoundState roundState = null;
         private Level arenaLoadLevel = null;
-        private float startTimer = 0f;
+        private float startDelayTimer = -1f, startTimer = 0f;
         //NOTE: DON'T USE QUEUES, OR EVEREST DECIDES TO DIE
         private List<Action> updateQueue = new List<Action>(), prevUpdateQueue = new List<Action>();
 
@@ -140,6 +140,35 @@ namespace Celeste.Mod.Madhunt {
             //Update start timer
             if(startTimer > 0) startTimer -= (float) gameTime.ElapsedGameTime.TotalSeconds;
             
+            //Update start delay timer
+            if(roundState != null && !InRound) {
+                startDelayTimer -= Engine.DeltaTime;
+                Engine.TimeRate *= (float) Math.Pow(0.05f, Engine.DeltaTime);
+
+                if(startDelayTimer <= 0) {
+                    //Determine and set the player state
+                    PlayerState state;
+                    if(roundState.settings.initialSeekers > 0) {
+                        state = (GetGhostStates().Count(ghostState => {
+                            if(ghostState.RoundState == null || ghostState.RoundState.Value.roundID != roundState.settings.RoundID) return false;
+                            int ghostSeed = ghostState.RoundState.Value.seed;
+                            return ghostSeed > roundState.playerSeed || (ghostSeed == roundState.playerSeed && ghostState.Player.ID > (module?.Context?.Client?.PlayerInfo?.ID ?? 0));
+                        }) < roundState.settings.initialSeekers) ? PlayerState.SEEKER : PlayerState.HIDER;
+                    } else {
+                        state = (GetGhostStates().Count(ghostState => {
+                            if(ghostState.RoundState == null || ghostState.RoundState.Value.roundID != roundState.settings.RoundID) return false;
+                            int ghostSeed = ghostState.RoundState.Value.seed;
+                            return ghostSeed > roundState.playerSeed || (ghostSeed == roundState.playerSeed && ghostState.Player.ID > (module?.Context?.Client?.PlayerInfo?.ID ?? 0));
+                        }) < -roundState.settings.initialSeekers) ? PlayerState.HIDER : PlayerState.SEEKER;
+                    }
+                    Logger.Log(Module.Name, $"Determined state {state} for Madhunt {roundState.settings.RoundID}");
+                    State = state;
+
+                    //Change the spawnpoint and respawn player
+                    RespawnInArena();
+                }
+            }
+
             //Clear update queue
             List<Action> queue = updateQueue;
             updateQueue = prevUpdateQueue;
@@ -162,20 +191,20 @@ namespace Celeste.Mod.Madhunt {
                 StartZoneID = startZoneID
             });
 
-            StartInternal(settings, PlayerState.SEEKER);
+            StartInternal(settings);
             return true;
         }
 
-        private void StartInternal(RoundSettings settings, PlayerState state) {
-            if(!InRound) return;
-            Logger.Log(Module.Name, $"Starting Madhunt {settings.RoundID} in state {state}");
+        private void StartInternal(RoundSettings settings) {
+            if(roundState != null) return;
             
-            //Create round state and set state
+            //Create round state
             roundState = new RoundState() { settings = settings, playerSeed = Calc.Random.Next(int.MinValue, int.MaxValue), initialSpawn = true, othersJoined = false, isWinner = false };
-            State = state;
+            State = PlayerState.SEEDWAIT;
+            Logger.Log(Module.Name, $"Starting Madhunt {roundState.settings.RoundID} with seed {roundState.playerSeed}");
 
-            //Change the spawnpoint and respawn player
-            RespawnInArena();
+            //Start the start timer
+            startDelayTimer = 1f;
         }
 
         public void StopRound() {
@@ -267,7 +296,7 @@ namespace Celeste.Mod.Madhunt {
             if(data.StartZoneID.HasValue && data.StartZoneID != Celeste.Scene.Tracker.GetEntity<Player>()?.CollideFirst<StartZone>()?.ID) return;
 
             //Start the madhunt
-            StartInternal(data.RoundSettings, PlayerState.HIDER);
+            StartInternal(data.RoundSettings);
         }
         
         public void Handle(CelesteNetConnection con, DataMadhuntStateUpdate data) {
@@ -277,7 +306,7 @@ namespace Celeste.Mod.Madhunt {
         
         public void Handle(CelesteNetConnection con, DataPlayerInfo data) => MainThreadHelper.Do(() => CheckRoundEnd());
 
-        public bool InRound => roundState != null;
+        public bool InRound => roundState != null && roundState.playerState != PlayerState.SEEDWAIT;
         public PlayerState? State {
             get => roundState?.playerState;
             private set {

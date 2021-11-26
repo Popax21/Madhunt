@@ -13,12 +13,13 @@ namespace Celeste.Mod.Madhunt {
         public AreaKey arenaArea;
         public string spawnLevel;
         public byte spawnIndex;
+        public int initialSeekers;
 
         public string RoundID => $"{arenaArea.SID}#{arenaArea.Mode}#{spawnLevel}#{spawnIndex}#{Module.Instance.Metadata.Version.Major}.{Module.Instance.Metadata.Version.Minor}";
     }
 
     public enum PlayerState {
-        HIDER, SEEKER
+        SEEDWAIT, HIDER, SEEKER
     }
     
     public class DataMadhuntStart : DataType<DataMadhuntStart> {
@@ -46,6 +47,8 @@ namespace Celeste.Mod.Madhunt {
             RoundSettings.spawnLevel = reader.ReadNetString();
             RoundSettings.spawnIndex = reader.ReadByte();
 
+            RoundSettings.initialSeekers = reader.ReadInt32();
+
             StartZoneID = reader.ReadBoolean() ? (int?) reader.ReadInt32() : null;
         }
 
@@ -61,8 +64,9 @@ namespace Celeste.Mod.Madhunt {
             writer.WriteNetString(RoundSettings.arenaArea.SID);
             writer.Write((byte) RoundSettings.arenaArea.Mode);
             writer.WriteNetString(RoundSettings.spawnLevel);
-
             writer.Write(RoundSettings.spawnIndex);
+
+            writer.Write(RoundSettings.initialSeekers);
 
             writer.Write(StartZoneID.HasValue);
             if(StartZoneID.HasValue) writer.Write(StartZoneID.Value);
@@ -73,7 +77,7 @@ namespace Celeste.Mod.Madhunt {
         static DataMadhuntStateUpdate() => DataType<DataMadhuntStateUpdate>.DataID = "madhuntStateUpdate";
 
         public DataPlayerInfo Player;
-        public (string roundID, PlayerState state)? RoundState;
+        public (string roundID, int seed, PlayerState state)? RoundState;
 
         public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerPrivateState(Player), new MetaBoundRef(DataType<DataPlayerInfo>.DataID, Player?.ID ?? uint.MaxValue, true) };
 
@@ -83,7 +87,7 @@ namespace Celeste.Mod.Madhunt {
         }
 
         protected override void Read(CelesteNetBinaryReader reader) {
-            if(reader.ReadBoolean()) RoundState = (reader.ReadNetString(), (PlayerState) reader.ReadByte());
+            if(reader.ReadBoolean()) RoundState = (reader.ReadNetString(), reader.ReadInt32(), (PlayerState) reader.ReadByte());
             else RoundState = null;
         }
 
@@ -91,6 +95,7 @@ namespace Celeste.Mod.Madhunt {
             writer.Write(RoundState != null);
             if(RoundState != null) {
                 writer.WriteNetString(RoundState.Value.roundID);
+                writer.Write(RoundState.Value.seed);
                 writer.Write((byte) RoundState.Value.state);
             }
         }
