@@ -19,7 +19,8 @@ namespace Celeste.Mod.Madhunt {
             }
 
             public override void Render() {
-                base.Render();
+                if (SceneAs<Level>().FrozenOrPaused)
+                    return;
 
                 //Draw switch name
                 Player player = Scene.Tracker.GetEntity<Player>();
