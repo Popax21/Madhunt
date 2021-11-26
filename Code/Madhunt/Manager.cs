@@ -142,10 +142,10 @@ namespace Celeste.Mod.Madhunt {
             
             //Update start delay timer
             if(roundState != null && !InRound) {
-                startDelayTimer -= Engine.RawDeltaTime;
-                Engine.TimeRate *= (float) Math.Pow(0.05f, Engine.RawDeltaTime);
+                startDelayTimer += Engine.RawDeltaTime;
+                Engine.TimeRate = (float) Math.Exp(-4f * startDelayTimer);
 
-                if(startDelayTimer <= 0) {
+                if(startDelayTimer > 1f) {
                     //Determine and set the player state
                     PlayerState state;
                     if(roundState.settings.initialSeekers > 0) {
@@ -201,10 +201,8 @@ namespace Celeste.Mod.Madhunt {
             //Create round state
             roundState = new RoundState() { settings = settings, playerSeed = Calc.Random.Next(int.MinValue, int.MaxValue), initialSpawn = true, othersJoined = false, isWinner = false };
             State = PlayerState.SEEDWAIT;
+            startDelayTimer = 0;
             Logger.Log(Module.Name, $"Starting Madhunt {roundState.settings.RoundID} with seed {roundState.playerSeed}");
-
-            //Start the start timer
-            startDelayTimer = 1f;
         }
 
         public void StopRound() {
