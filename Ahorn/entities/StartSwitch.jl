@@ -1,7 +1,7 @@
 module MadhuntStartSwitch
 using ..Ahorn, Maple
 
-@mapdef Entity "Madhunt/StartSwitch" StartSwitch(x::Integer, y::Integer, side::Integer=0, switchID::Integer=0)
+@mapdef Entity "Madhunt/StartSwitch" StartSwitch(x::Integer, y::Integer, side::Integer=0, switchID::Integer=0, name::String="")
 
 const placements = Ahorn.PlacementDict(
     "Start Switch (Madhunt)" => Ahorn.EntityPlacement(

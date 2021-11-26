@@ -1,2 +1,7 @@
 Madhunt= Madhunt
 Madhunt_01_Forsaken_City= Forsaken City Arenas
+
+Madhunt_ArenaA= A-Side
+Madhunt_ArenaB= B-Side
+Madhunt_ArenaC= C-Side
+Madhunt_ArenaRandom= Random Arena

@@ -11,6 +11,8 @@ Each of these has to be setup with different custom entites provided by this mod
 ## Start Switch
 `switchID`: The ID of the switch. Choose any arbitrary number, however make sure that it's unique in the room.
 
+`name`: The dialogue key displayed above the switch. Leave empty to not display anything.
+
 ## Start Zone
 A trigger which when placed around a start switch creates a zone in which players have to be in to be affected by the switch. By default, switches will affect all players in the same room. Useful for big lobbies.
 
