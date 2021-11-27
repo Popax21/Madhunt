@@ -69,7 +69,7 @@ namespace Celeste.Mod.Madhunt {
         public override void Update() {
             if(pressed) {
                 //Choose a random arena option
-                ArenaOption[] opts = Scene.Tracker.GetEntities<ArenaOption>().Cast<ArenaOption>().Where(o => o.SwitchID == SwitchID).ToArray();
+                ArenaOption[] opts = Scene.Tracker.GetEntities<ArenaOption>().Cast<ArenaOption>().Where(o => o.CanChooseOption(this)).ToArray();
                 ArenaOption opt = (opts.Length > 0) ? Calc.Random.Choose(opts) : null;
 
                 //Start the manhunt

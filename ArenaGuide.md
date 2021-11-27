@@ -20,7 +20,7 @@ A trigger which when placed around a start switch creates a zone in which player
 ## Arena Option
 Describes one possible arena where a switch can send you. Adding multiple of them will make the start switch choose one at random
 
-`switchID`: The ID of the switch which can choose this option
+`switchIDs`: The IDs of switches which can choose this option. Individual IDs are seperated by `,`
 
 `arenaArea`: The ID of the map the arena is in. Leave blank for the same map as the option. By default, the A side is choosen, however you can add `#a/b/c` to the end to specify the side.
 

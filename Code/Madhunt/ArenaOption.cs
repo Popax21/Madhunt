@@ -1,16 +1,20 @@
+using System.Collections.Generic;
+
 using Microsoft.Xna.Framework;
 using Monocle;
 using Celeste.Mod.Entities;
+using System.Linq;
 
 namespace Celeste.Mod.Madhunt {
     [Tracked]
     [CustomEntity("Madhunt/ArenaOption")]
     public class ArenaOption : Entity {
         private EntityData data;
+        private HashSet<int> switchIDs;
 
         public ArenaOption(EntityData data, Vector2 offset) {
             this.data = data;
-            SwitchID = data.Int("switchID");
+            this.switchIDs = data.Attr("switchIDs").Split(new[]{','}).Select(s => int.Parse(s)).ToHashSet();
         }
 
         private AreaKey ParseArea(string str) {
@@ -28,6 +32,8 @@ namespace Celeste.Mod.Madhunt {
 
             return new AreaKey() { SID = sid, Mode = mode };
         }
+
+        public bool CanChooseOption(StartSwitch sSwitch) => switchIDs.Contains(sSwitch.SwitchID);
 
         public RoundSettings GenerateRoundSettings() {
             Session ses = SceneAs<Level>()?.Session;
@@ -48,7 +54,5 @@ namespace Celeste.Mod.Madhunt {
                 hideNames = data.Bool("hideNames", true)
             };
         }
-
-        public int SwitchID { get; }
     }
 }
