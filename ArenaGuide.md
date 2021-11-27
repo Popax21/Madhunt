@@ -34,6 +34,8 @@ Describes one possible arena where a switch can send you. Adding multiple of the
 
 `goldenMode`: Hiders always turn into seekers when they die.
 
+`hideNames`: Don't show names of seekers to hiders and vice versa.
+
 ## Hider/Seeker Spawn Point
 Provides the location either hiders or seekers spawn in the arena. However, these are only used initialy and when a hider turns into a seeker, regular "Change Respawn" triggers still work!
 

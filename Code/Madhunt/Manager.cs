@@ -140,7 +140,7 @@ namespace Celeste.Mod.Madhunt {
             }));
 
             ghostNameRenderHook = new Hook(typeof(GhostNameTag).GetMethod(nameof(GhostNameTag.Render)), (Action<Action<GhostNameTag>, GhostNameTag>) ((orig, nameTag) => {
-                if(!InRound || !(nameTag.Tracking is Ghost ghost) || State == GetGhostState(ghost.PlayerInfo)?.RoundState?.state) orig(nameTag);
+                if(!InRound || !roundState.settings.hideNames || !(nameTag.Tracking is Ghost ghost) || State == GetGhostState(ghost.PlayerInfo)?.RoundState?.state) orig(nameTag);
             }));
         }
 

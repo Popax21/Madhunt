@@ -1,7 +1,7 @@
 module MadhuntArenaOption
 using ..Ahorn, Maple
 
-@mapdef Entity "Madhunt/ArenaOption" ArenaOption(x::Integer, y::Integer, switchID::Integer=0, arenaArea::String="", spawnLevel::String="", spawnIndex::Integer=0, initialSeekers::Integer=1, tagMode::Bool=true, goldenMode::Bool=false)
+@mapdef Entity "Madhunt/ArenaOption" ArenaOption(x::Integer, y::Integer, switchID::Integer=0, arenaArea::String="", spawnLevel::String="", spawnIndex::Integer=0, initialSeekers::Integer=1, tagMode::Bool=true, goldenMode::Bool=false, hideNames::Bool=true)
 
 const placements = Ahorn.PlacementDict(
     "Arena Option (Madhunt)" => Ahorn.EntityPlacement(ArenaOption)
