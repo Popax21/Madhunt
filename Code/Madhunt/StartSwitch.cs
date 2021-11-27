@@ -37,6 +37,8 @@ namespace Celeste.Mod.Madhunt {
             }
         }
         private static readonly FieldInfo PRESSED_FIELD = typeof(DashSwitch).GetField("pressed", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static On.Celeste.DashSwitch.hook_OnDashed dashHook;
+        private static int dashHookCounter = 0;
         private Sides side;
         private NameText nameText;
         private bool pressed = false;
@@ -46,9 +48,9 @@ namespace Celeste.Mod.Madhunt {
             SwitchID = data.Int("switchID");
             nameText = string.IsNullOrEmpty(data.Attr("name")) ? null : new NameText(this, data.Attr("name"));
 
-            OnDashCollide = (player, dir) => {
-                DashCollisionResults res = OnDashed(player, dir);
-                if(!pressed && (bool) PRESSED_FIELD.GetValue(this)) pressed = true;
+            if(dashHookCounter++ <= 0) On.Celeste.DashSwitch.OnDashed += dashHook = (orig, dSwitch, player, dir) => {
+                DashCollisionResults res = orig(dSwitch, player, dir);
+                if(dSwitch is StartSwitch sSwitch && !sSwitch.pressed && (bool) PRESSED_FIELD.GetValue(sSwitch)) sSwitch.pressed = true;
                 return res;
             };
         }
@@ -61,6 +63,7 @@ namespace Celeste.Mod.Madhunt {
         public override void Removed(Scene scene) {
             Scene.Remove(nameText);
             base.Removed(scene);
+            if(--dashHookCounter <= 0) On.Celeste.DashSwitch.OnDashed -= dashHook;
         }
 
         public override void Update() {
