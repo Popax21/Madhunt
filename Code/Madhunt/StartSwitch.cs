@@ -57,11 +57,11 @@ namespace Celeste.Mod.Madhunt {
 
         public override void Added(Scene scene) {
             base.Added(scene);
-            Scene.Add(nameText);
+            if(nameText != null) Scene.Add(nameText);
         }
 
         public override void Removed(Scene scene) {
-            Scene.Remove(nameText);
+            if(nameText != null) Scene.Remove(nameText);
             base.Removed(scene);
             if(--dashHookCounter <= 0) On.Celeste.DashSwitch.OnDashed -= dashHook;
         }
