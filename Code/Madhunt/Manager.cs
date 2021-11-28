@@ -315,7 +315,7 @@ namespace Celeste.Mod.Madhunt {
                 //Change session
                 ses.Area = roundState.settings.arenaArea;
                 ses.Level = roundState.settings.spawnLevel;
-                ses.Inventory.DreamDash = ses.MapData.Data.Mode[(int) ses.Area.Mode].Inventory.DreamDash;
+                ses.Inventory.DreamDash = true;
                 LevelLoader loader = new LevelLoader(ses);
                 arenaLoadLevel = loader.Level;
                 Celeste.Scene = loader;
