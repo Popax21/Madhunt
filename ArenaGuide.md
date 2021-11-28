@@ -3,6 +3,7 @@ A Madhunt map consists of the following parts:
 * The lobby
   * Contains all your start switches. However, these switches need Arena Options to work.
   * Make sure the player spawns here!
+  * Can optionally contain Transition Boosters (+ Targets)
 * The arena(s)
   * Don't contain any special entites other than Hider/Seeker Spawn Points.
   * Can optionaly contain gameplay entities like Hider Win Hearts
@@ -35,6 +36,24 @@ Describes one possible arena where a switch can send you. Adding multiple of the
 `goldenMode`: Hiders always turn into seekers when they die.
 
 `hideNames`: Don't show names of seekers to hiders and vice versa.
+
+## Transition Booster
+A special kind of booster. If it hits a room transition while moving in the target direction, the player will transition to the Transition Booster Target with the same ID in the target area + room.
+
+`targetDir`: The direction the booster must be moving in to trigger a transition
+
+`targetArea`: The target area of the booster. Format the same as `arenaArea` for Arena Options
+
+`targetLevel`: The target room of the booster. The player will end up in this room
+
+`targetID`: The ID of the booster target in the target room
+
+## Transition Booster Target
+A potential target for transition boosters targeting this room. After a transition happens which targets it, the player will appear in a new dummy Transition Booster moving in the specified direction.
+
+`targetID`: The ID of the target
+
+`boosterDir`: The direction the dummy booster will be moving in
 
 ## Hider/Seeker Spawn Point
 Provides the location either hiders or seekers spawn in the arena. However, these are only used initialy and when a hider turns into a seeker, regular "Change Respawn" triggers still work!

@@ -17,22 +17,6 @@ namespace Celeste.Mod.Madhunt {
             this.switchIDs = data.Attr("switchIDs").Split(new[]{','}).Select(s => int.Parse(s)).ToHashSet();
         }
 
-        private AreaKey ParseArea(string str) {
-            string sid = str;
-            AreaMode mode = AreaMode.Normal;
-
-            int hashTagIndex = str.LastIndexOf('#');
-            if(hashTagIndex >= 0 && hashTagIndex == str.Length-2) {
-                switch(char.ToLower(str[hashTagIndex+1])) {
-                    case 'a': str = str.Substring(hashTagIndex); mode = AreaMode.Normal; break;
-                    case 'b': str = str.Substring(hashTagIndex); mode = AreaMode.BSide; break;
-                    case 'c': str = str.Substring(hashTagIndex); mode = AreaMode.CSide; break;
-                }
-            }
-
-            return new AreaKey() { SID = sid, Mode = mode };
-        }
-
         public bool CanChooseOption(StartSwitch sSwitch) => switchIDs.Contains(sSwitch.SwitchID);
 
         public RoundSettings GenerateRoundSettings() {
@@ -45,7 +29,7 @@ namespace Celeste.Mod.Madhunt {
                 lobbyArea = ses.Area,
                 lobbyLevel = ses.Level,
                 lobbySpawnPoint = ses.RespawnPoint ?? Vector2.Zero,
-                arenaArea = (data.Attr("arenaArea").Length > 0) ? ParseArea(data.Attr("arenaArea")) : ses.Area,
+                arenaArea = (data.Attr("arenaArea").Length > 0) ? data.Attr("arenaArea").ParseAreaKey() : ses.Area,
                 spawnLevel = data.Attr("spawnLevel"),
                 spawnIndex = (byte) spawnIndex,
                 initialSeekers = data.Int("initialSeekers", 1),
