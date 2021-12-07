@@ -15,6 +15,7 @@
     <Reference Include="MonoMod"><HintPath>../../../../MonoMod.RuntimeDetour.dll</HintPath><Private>true</Private></Reference>
     <Reference Include="Celeste"><HintPath>CelesteNet.Client.dll</HintPath><Private>true</Private></Reference>
     <Reference Include="Celeste"><HintPath>CelesteNet.Shared.dll</HintPath><Private>true</Private></Reference>
+    <Reference Include="Celeste"><HintPath>Procedurline.dll</HintPath><Private>true</Private></Reference>
   </ItemGroup>
 
   <Target Name="CopyDLL" AfterTargets="Build">
