@@ -220,7 +220,7 @@ namespace Celeste.Mod.Madhunt {
         }
 
         public bool StartRound(RoundSettings settings, int? startZoneID=null) {
-            if(module?.Context == null || InRound) return false;
+            if(module?.Context == null || !module.Client.IsReady || InRound) return false;
 
             //Send start packet
             module.Context.Client.Send<DataMadhuntStart>(new DataMadhuntStart() {
