@@ -30,7 +30,7 @@ namespace Celeste.Mod.Madhunt {
 
         private CelesteNetClientModule module;
         private Delegate initHook, disposeHook;
-        private Hook ghostPlayerCollisionHook, ghostNameRenderHook, ghostEmoteRenderHook;
+        private Hook ghostPlayerCollisionHook, ghostNameRenderHook;
 
         private RoundState roundState = null;
         private Level arenaLoadLevel = null;
