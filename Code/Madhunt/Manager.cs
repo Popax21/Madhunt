@@ -35,7 +35,7 @@ namespace Celeste.Mod.Madhunt {
         private RoundState roundState = null;
         private Level arenaLoadLevel = null;
         private float startDelayTimer = -1f, startTimer = 0f;
-        private ConcurrentQueue<Action> updateQueue = new ConcurrentQueue<Action>(), prevUpdateQueue = new ConcurrentQueue<Action>();
+        private ConcurrentQueue<Action> updateQueue = new ConcurrentQueue<Action>();
 
         public Manager(Game game) : base(game) {
             //Get the Celeste.NET module
@@ -211,10 +211,8 @@ namespace Celeste.Mod.Madhunt {
 
             //Clear update queue
             ConcurrentQueue<Action> queue = updateQueue;
-            updateQueue = prevUpdateQueue;
-            prevUpdateQueue = queue;
+            updateQueue = new ConcurrentQueue<Action>();
             foreach(Action act in queue) act();
-            queue.Clear();
             
             base.Update(gameTime);
         }
