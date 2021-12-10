@@ -36,7 +36,7 @@ namespace Celeste.Mod.Madhunt {
         public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerUpdate(StartPlayer) };
         public override void FixupMeta(DataContext ctx) => StartPlayer = Get<MetaPlayerUpdate>(ctx).Player;
 
-        protected override void Read(CelesteNetBinaryReader reader) {
+        public override void Read(CelesteNetBinaryReader reader) {
             MajorVersion = reader.ReadInt32();
             MinorVersion = reader.ReadInt32();
 
@@ -58,7 +58,7 @@ namespace Celeste.Mod.Madhunt {
             StartZoneID = reader.ReadBoolean() ? (int?) reader.ReadInt32() : null;
         }
 
-        protected override void Write(CelesteNetBinaryWriter writer) {
+        public override void Write(CelesteNetBinaryWriter writer) {
             writer.Write(MajorVersion);
             writer.Write(MinorVersion);
             
@@ -92,12 +92,12 @@ namespace Celeste.Mod.Madhunt {
         public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerUpdate(EndPlayer) };
         public override void FixupMeta(DataContext ctx) => EndPlayer = Get<MetaPlayerUpdate>(ctx).Player;
 
-        protected override void Read(CelesteNetBinaryReader reader) {
+        public override void Read(CelesteNetBinaryReader reader) {
             RoundID = reader.ReadNetString();
             WinningState = (PlayerState) reader.ReadByte();
         }
         
-        protected override void Write(CelesteNetBinaryWriter writer) {
+        public override void Write(CelesteNetBinaryWriter writer) {
             writer.WriteNetString(RoundID);
             writer.Write((byte) WinningState);
         }
@@ -116,12 +116,12 @@ namespace Celeste.Mod.Madhunt {
             Get<MetaBoundRef>(ctx).ID = Player?.ID ?? uint.MaxValue;
         }
 
-        protected override void Read(CelesteNetBinaryReader reader) {
+        public override void Read(CelesteNetBinaryReader reader) {
             if(reader.ReadBoolean()) RoundState = (reader.ReadNetString(), reader.ReadInt32(), (PlayerState) reader.ReadByte());
             else RoundState = null;
         }
 
-        protected override void Write(CelesteNetBinaryWriter writer) {
+        public override void Write(CelesteNetBinaryWriter writer) {
             writer.Write(RoundState != null);
             if(RoundState != null) {
                 writer.WriteNetString(RoundState.Value.roundID);
