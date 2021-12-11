@@ -1,3 +1,11 @@
+---------- CHANGELOG VERSION 1.3 ----------
+- Added Old Site Arenas
+- Made initial seeker be determined randomly
+- Disallow players from going out-of-bounds
+- Added names to start switches
+- More options for custom arenas
+- Many small bug fixes
+
 ---------- CHANGELOG VERSION 1.2.1 ----------
 - Fixed a fatal flaw in v1.2 causing all maps to break
 
