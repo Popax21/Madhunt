@@ -73,7 +73,7 @@ namespace Celeste.Mod.Madhunt {
                 ArenaOption opt = (opts.Length > 0) ? Calc.Random.Choose(opts) : null;
 
                 //Start the manhunt
-                if(opt == null || !Module.MadhuntManager.StartRound(opt.GenerateRoundSettings(), CollideFirst<StartZone>()?.ID)) Scene.Tracker.GetEntity<Player>().Die(Vector2.Zero, true);
+                if(opt == null || !Module.MadhuntManager.StartRound(opt.GenerateRoundSettings(), CollideFirst<StartZone>()?.ID)) Scene.Tracker.GetEntity<Player>().Die(Vector2.Zero, true, false);
                 pressed = false;
             }
             base.Update();

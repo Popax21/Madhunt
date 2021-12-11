@@ -186,6 +186,13 @@ namespace Celeste.Mod.Madhunt {
                 Engine.TimeRate = (float) Math.Exp(-6f * startDelayTimer);
 
                 if(startDelayTimer > 0.5f) {
+                    //Check if anyone else is in the same round
+                    if(!GetGhostStates().Any(ghostState => ghostState.RoundState != null && ghostState.RoundState.Value.roundID == roundState.settings.RoundID)) {
+                        Engine.Scene?.Tracker?.GetEntity<Player>()?.Die(Vector2.Zero, true, false);
+                        roundState = null;
+                        return;
+                    }
+
                     //Determine and set the player state
                     PlayerState state;
                     if(roundState.settings.initialSeekers > 0) {
