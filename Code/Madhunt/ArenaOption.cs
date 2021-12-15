@@ -20,24 +20,26 @@ namespace Celeste.Mod.Madhunt {
 
         public bool CanChooseOption(StartSwitch sSwitch) => switchIDs.Contains(sSwitch.SwitchID);
 
-        public RoundSettings GenerateRoundSettings() {
-            Session ses = SceneAs<Level>()?.Session;
+        public RoundSettings Settings {
+            get {
+                Session ses = SceneAs<Level>()?.Session;
 
-            int spawnIndex = data.Int("spawnIndex");
-            if(spawnIndex < 0) spawnIndex = Calc.Random.Range(0, -spawnIndex);
+                int spawnIndex = data.Int("spawnIndex");
+                if(spawnIndex < 0) spawnIndex = Calc.Random.Range(0, -spawnIndex);
 
-            return new RoundSettings() {
-                lobbyArea = ses.Area,
-                lobbyLevel = ses.Level,
-                lobbySpawnPoint = ses.RespawnPoint ?? Vector2.Zero,
-                arenaArea = (data.Attr("arenaArea").Length > 0) ? data.Attr("arenaArea").ParseAreaKey() : ses.Area,
-                spawnLevel = data.Attr("spawnLevel"),
-                spawnIndex = (byte) spawnIndex,
-                initialSeekers = data.Int("initialSeekers", 1),
-                tagMode = data.Bool("tagMode", true),
-                goldenMode = data.Bool("goldenMode", false),
-                hideNames = data.Bool("hideNames", true)
-            };
+                return new RoundSettings() {
+                    lobbyArea = ses.Area,
+                    lobbyLevel = ses.Level,
+                    lobbySpawnPoint = ses.RespawnPoint ?? Vector2.Zero,
+                    arenaArea = (data.Attr("arenaArea").Length > 0) ? data.Attr("arenaArea").ParseAreaKey() : ses.Area,
+                    spawnLevel = data.Attr("spawnLevel"),
+                    spawnIndex = (byte) spawnIndex,
+                    initialSeekers = data.Int("initialSeekers", 1),
+                    tagMode = data.Bool("tagMode", true),
+                    goldenMode = data.Bool("goldenMode", false),
+                    hideNames = data.Bool("hideNames", true)
+                };
+            }
         }
     }
 }

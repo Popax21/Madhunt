@@ -32,7 +32,7 @@ namespace Celeste.Mod.Madhunt {
         private ConcurrentQueue<Action> updateQueue = new ConcurrentQueue<Action>();
 
         public Manager(Game game) : base(game) {
-            //Get the Celeste.NET module
+            //Get the CelesteNET module
             if((module = (CelesteNetClientModule) Everest.Modules.FirstOrDefault(m => m is CelesteNetClientModule)) == null) throw new Exception("CelesteNET not loaded!");
 
             //Install Celeste hooks
@@ -137,7 +137,7 @@ namespace Celeste.Mod.Madhunt {
             if(module?.Context == null || !module.Client.IsReady || InRound) return false;
 
             //Send start packet
-            module.Context.Client.Send<DataMadhuntStart>(new DataMadhuntStart() {
+            module.Context.Client.Send(new DataMadhuntRoundStart() {
                 MajorVersion = Module.Instance.Metadata.Version.Major,
                 MinorVersion = Module.Instance.Metadata.Version.Minor,
                 StartPlayer = module.Context.Client.PlayerInfo,
@@ -332,22 +332,25 @@ namespace Celeste.Mod.Madhunt {
             if(!InRound || !roundState.settings.hideNames || !(nameTag.Tracking is Ghost ghost) || State == GetGhostState(ghost.PlayerInfo)?.RoundState?.state) orig(nameTag);
         }
 
-        public void Handle(CelesteNetConnection con, DataMadhuntStart data) {
+        public void Handle(CelesteNetConnection con, DataMadhuntRoundStart data) {
             //Check if the version is compatible
             if(data.MajorVersion != Module.Instance.Metadata.Version.Major || data.MinorVersion != Module.Instance.Metadata.Version.Minor) {
-                Logger.Log(LogLevel.Warn, Module.Name, $"Ignoring Madhunt start packet with incompatible version {data.MajorVersion}.{data.MinorVersion} vs installed {Module.Instance.Metadata.Version}");
+                Logger.Log(LogLevel.Info, Module.Name, $"Ignoring Madhunt round start packet with incompatible version {data.MajorVersion}.{data.MinorVersion} vs installed {Module.Instance.Metadata.Version}");
                 return;
             }
 
             updateQueue.Enqueue(() => {
                 //Check if we should start
-                Session ses = (Celeste.Scene as Level)?.Session;
-                if(InRound || ses == null || ses.Area != data.RoundSettings.lobbyArea || ses.Level != data.RoundSettings.lobbyLevel) return;
-                
-                //Check if the zone ID matches
-                if(data.StartZoneID.HasValue && data.StartZoneID != Celeste.Scene.Tracker.GetEntity<Player>()?.CollideFirst<StartZone>()?.ID) return;
+                if(roundState != null) return;
 
-                //Start the madhunt
+                bool validSettings = false;
+                OnVerifyRoundStart?.Invoke(data, ref validSettings);
+                if(!validSettings) {
+                    Logger.Log(LogLevel.Info, Module.Name, $"Ignoring Madhunt round start packet because the verifiers didn't accept it");
+                    return;
+                }
+
+                //Start the round
                 updateQueue.Enqueue(() => StartInternal(data.RoundSettings));
             });
         }
@@ -384,5 +387,8 @@ namespace Celeste.Mod.Madhunt {
                 });
             }
         }
+
+        public delegate void RoundVerifyer(DataMadhuntRoundStart startData, ref bool isValid);
+        public event RoundVerifyer OnVerifyRoundStart;
     }
 }

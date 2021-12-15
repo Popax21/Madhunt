@@ -18,15 +18,15 @@ namespace Celeste.Mod.Madhunt {
         public bool tagMode, goldenMode;
         public bool hideNames;
 
-        public string RoundID => $"{arenaArea.SID}#{arenaArea.Mode}#{spawnLevel}#{spawnIndex}#{Module.Instance.Metadata.Version.Major}.{Module.Instance.Metadata.Version.Minor}";
+        public string RoundID => $"{arenaArea.SID}#{arenaArea.Mode}#{spawnLevel}#{spawnIndex}#{tagMode}#{goldenMode}#{Module.Instance.Metadata.Version.Major}.{Module.Instance.Metadata.Version.Minor}";
     }
 
     public enum PlayerState {
         SEEDWAIT, HIDER, SEEKER
     }
     
-    public class DataMadhuntStart : DataType<DataMadhuntStart> {
-        static DataMadhuntStart() => DataID = "madhuntStart";
+    public class DataMadhuntRoundStart : DataType<DataMadhuntRoundStart> {
+        static DataMadhuntRoundStart() => DataID = "madhuntRoundStart";
         
         public int MajorVersion, MinorVersion;
         public DataPlayerInfo StartPlayer;
