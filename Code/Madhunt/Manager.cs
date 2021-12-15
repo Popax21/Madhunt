@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -9,8 +11,7 @@ using Celeste.Mod.CelesteNet;
 using Celeste.Mod.CelesteNet.Client;
 using Celeste.Mod.CelesteNet.Client.Entities;
 using Celeste.Mod.CelesteNet.DataTypes;
-using System.Reflection;
-using System.Collections.Concurrent;
+using Celeste.Mod.CelesteNet.Client.Components;
 
 namespace Celeste.Mod.Madhunt {
     //TODO Rewrite this to be modular and not a big blob of logic
@@ -41,6 +42,7 @@ namespace Celeste.Mod.Madhunt {
             On.Celeste.Level.LoadNewPlayer += PlayerLoadHook;
             On.Celeste.Level.EnforceBounds += EnforceBoundsHook;
             On.Celeste.Player.Die += DieHook;
+            On.Celeste.Holdable.Pickup += PickupHook;
 
             //Install CelesteNet context hooks
             EventInfo initEvt = typeof(CelesteNetClientContext).GetEvent("OnInit");
@@ -57,7 +59,7 @@ namespace Celeste.Mod.Madhunt {
                 disposeEvt.AddEventHandler(null, disposeHook = (Action<object>) (_ => StopRound()));
             }
             
-            //Install CelesteNet ghost hooks
+            //Install CelesteNet hooks
             ghostPlayerCollisionHook = new Hook(typeof(Ghost).GetMethod(nameof(Ghost.OnPlayer)), GetType().GetMethod(nameof(GhostPlayerCollisionHook)));
             ghostNameRenderHook = new Hook(typeof(GhostNameTag).GetMethod(nameof(GhostNameTag.Render)), GetType().GetMethod(nameof(GhostNameTagRenderHook)));
         }
@@ -69,6 +71,7 @@ namespace Celeste.Mod.Madhunt {
             On.Celeste.Level.LoadNewPlayer -= PlayerLoadHook;
             On.Celeste.Level.EnforceBounds -= EnforceBoundsHook;
             On.Celeste.Player.Die -= DieHook;
+            On.Celeste.Holdable.Pickup -= PickupHook;
 
             if(initHook != null) typeof(CelesteNetClientContext).GetEvent("OnInit").RemoveEventHandler(null, initHook);
             initHook = null;
@@ -76,11 +79,9 @@ namespace Celeste.Mod.Madhunt {
             if(disposeHook != null) typeof(CelesteNetClientContext).GetEvent("OnDispose").RemoveEventHandler(null, disposeHook);
             disposeHook = null;
 
-            if(ghostPlayerCollisionHook != null) ghostPlayerCollisionHook.Dispose();
-            ghostPlayerCollisionHook = null;
-
-            if(ghostNameRenderHook != null) ghostNameRenderHook.Dispose();
-            ghostNameRenderHook = null;
+            ghostPlayerCollisionHook.Dispose();
+            ghostNameRenderHook.Dispose();
+            ghostPlayerCollisionHook = ghostNameRenderHook = null;
 
             base.Dispose(disposing);
         }
@@ -310,6 +311,18 @@ namespace Celeste.Mod.Madhunt {
             return body;
         }
 
+        private bool PickupHook(On.Celeste.Holdable.orig_Pickup orig, Holdable holdable, Player player) {
+            //Does the holdable belong to a ghost?
+            if(!InRound || !(holdable.Entity is Ghost ghost)) return orig(holdable, player);
+
+            //Is the ghost in the same round and not in the same state?
+            DataMadhuntStateUpdate ghostState = GetGhostState(ghost.PlayerInfo);
+            if(ghostState?.RoundState == null || ghostState.RoundState.Value.roundID != roundState.settings.RoundID || ghostState.RoundState.Value.state == State) return orig(holdable, player);
+
+            //Don't allow grabbing between players in different states
+            return false;
+        }
+
         private void GhostPlayerCollisionHook(Action<Ghost, Player> orig, Ghost ghost, Player player) {
             //Check if we collided with a seeker ghost as a hider
             DataMadhuntStateUpdate ghostState = GetGhostState(ghost.PlayerInfo);
@@ -323,8 +336,10 @@ namespace Celeste.Mod.Madhunt {
                         State = PlayerState.SEEKER;
                         CheckRoundEnd(false, ended => { if(!ended) RespawnInArena(); });
                     };
-                } else if (State == ghostState?.RoundState?.state)
+                } else if(State == ghostState?.RoundState?.state) {
+                    //Only handle the collision if the ghost has the same role
                     orig(ghost, player);
+                }
             } else orig(ghost, player);
         }
 
