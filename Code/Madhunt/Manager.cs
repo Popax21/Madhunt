@@ -241,7 +241,7 @@ namespace Celeste.Mod.Madhunt {
             if(!(module.Context?.Client?.Data?.TryGetBoundRef<DataPlayerInfo,DataMadhuntStateUpdate>(info.ID, out ghostState) ?? false)) return null;
             return ghostState;
         }
-        private IEnumerable<DataMadhuntStateUpdate> GetGhostStates() => module?.Context?.Client?.Data?.GetRefs<DataPlayerInfo>().Where(i => !string.IsNullOrEmpty(i.DisplayName)).Select(i => GetGhostState(i)).Where(s => s != null) ?? Enumerable.Empty<DataMadhuntStateUpdate>();
+        private IEnumerable<DataMadhuntStateUpdate> GetGhostStates() => module?.Context?.Client?.Data?.GetRefs<DataPlayerInfo>().Where(i => i != module?.Context?.Client?.PlayerInfo && !string.IsNullOrEmpty(i.DisplayName)).Select(i => GetGhostState(i)).Where(s => s != null) ?? Enumerable.Empty<DataMadhuntStateUpdate>();
 
         private void LevelLoadHook(Level lvl, Player.IntroTypes intro, bool fromLoader) {
             //Disable save and quit when in a round
