@@ -12,6 +12,7 @@ using Celeste.Mod.CelesteNet.Client;
 using Celeste.Mod.CelesteNet.Client.Entities;
 using Celeste.Mod.CelesteNet.DataTypes;
 using Celeste.Mod.CelesteNet.Client.Components;
+using System.Collections;
 
 namespace Celeste.Mod.Madhunt {
     //TODO Rewrite this to be modular and not a big blob of logic
@@ -21,6 +22,7 @@ namespace Celeste.Mod.Madhunt {
             public int playerSeed;
             public PlayerState playerState;
             public bool initialSpawn, othersJoined, isWinner;
+            public HashSet<EntityID> openedLockBlocks;
         }
 
         private CelesteNetClientModule module;
@@ -43,6 +45,7 @@ namespace Celeste.Mod.Madhunt {
             On.Celeste.Level.EnforceBounds += EnforceBoundsHook;
             On.Celeste.Player.Die += DieHook;
             On.Celeste.Holdable.Pickup += PickupHook;
+            On.Celeste.LockBlock.UnlockRoutine += LockBlockUnlockHook;
 
             //Install CelesteNet context hooks
             EventInfo initEvt = typeof(CelesteNetClientContext).GetEvent("OnInit");
@@ -60,8 +63,8 @@ namespace Celeste.Mod.Madhunt {
             }
             
             //Install CelesteNet hooks
-            ghostPlayerCollisionHook = new Hook(typeof(Ghost).GetMethod(nameof(Ghost.OnPlayer)), GetType().GetMethod(nameof(GhostPlayerCollisionHook)));
-            ghostNameRenderHook = new Hook(typeof(GhostNameTag).GetMethod(nameof(GhostNameTag.Render)), GetType().GetMethod(nameof(GhostNameTagRenderHook)));
+            ghostPlayerCollisionHook = new Hook(typeof(Ghost).GetMethod(nameof(Ghost.OnPlayer)), GetType().GetMethod(nameof(GhostPlayerCollisionHook), BindingFlags.NonPublic | BindingFlags.Instance), this);
+            ghostNameRenderHook = new Hook(typeof(GhostNameTag).GetMethod(nameof(GhostNameTag.Render)), GetType().GetMethod(nameof(GhostNameTagRenderHook), BindingFlags.NonPublic | BindingFlags.Instance), this);
         }
 
         protected override void Dispose(bool disposing) {
@@ -98,6 +101,7 @@ namespace Celeste.Mod.Madhunt {
                 if(startDelayTimer > 0.75f) {
                     //Check if anyone else is in the same round
                     if(!GetGhostStates().Any(ghostState => ghostState.RoundState != null && ghostState.RoundState.Value.roundID == roundState.settings.RoundID)) {
+                        Engine.TimeRate = 1f;
                         Engine.Scene?.Tracker?.GetEntity<Player>()?.Die(Vector2.Zero, true, false);
                         roundState = null;
                         return;
@@ -154,10 +158,11 @@ namespace Celeste.Mod.Madhunt {
             if(roundState != null) return;
             
             //Create round state
-            roundState = new RoundState() { settings = settings, playerSeed = Calc.Random.Next(int.MinValue, int.MaxValue), initialSpawn = true, othersJoined = false, isWinner = false };
+            roundState = new RoundState() { settings = settings, playerSeed = Calc.Random.Next(int.MinValue, int.MaxValue), initialSpawn = true, othersJoined = false, isWinner = false, openedLockBlocks = new HashSet<EntityID>() };
             State = PlayerState.SEEDWAIT;
             startDelayTimer = 0;
             Logger.Log(Module.Name, $"Starting Madhunt {roundState.settings.RoundID} with seed {roundState.playerSeed}");
+            CheckRoundEnd();
         }
 
         public void StopRound() {
@@ -185,22 +190,25 @@ namespace Celeste.Mod.Madhunt {
         private void CheckRoundEnd(bool endIfEmpty = true, Action<bool> callback = null) {
             if(!InRound) return;
 
-            //Check if there are any hider or seeker ghosts
-            if(
-                !(endIfEmpty || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID)) || 
-                (
-                    (State == PlayerState.HIDER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) &&
-                    (State == PlayerState.SEEKER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.SEEKER))
-                )
-            ) {
-                roundState.isWinner = false;
+            //Check if the round's empty, and we shouldn't end the round if that's the case
+            if(!endIfEmpty && !GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID)) {
                 callback?.Invoke(false);
                 return;
             }
 
-            //If we're still a hider, continue the round
-            if(State == PlayerState.HIDER) {
+            //If we're the only remaining hider
+            if(State == PlayerState.HIDER && !GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) {
                 roundState.isWinner = true;
+                callback?.Invoke(false);
+                return;
+            }
+
+            //Check if there are both hiders and seekers left
+            if(
+                (State == PlayerState.HIDER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) &&
+                (State == PlayerState.SEEKER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.SEEKER))
+            ) {
+                roundState.isWinner = false;
                 callback?.Invoke(false);
                 return;
             }
@@ -220,6 +228,7 @@ namespace Celeste.Mod.Madhunt {
                 ses.Level = state.settings.lobbyLevel;
                 ses.RespawnPoint = state.settings.lobbySpawnPoint;
                 ses.Inventory.DreamDash = state.isWinner;
+                ResetArenaKeys(state, ses, (Celeste.Scene as Level)?.Tracker?.GetEntity<Player>());
                 Celeste.Scene = new LevelLoader(ses, ses.RespawnPoint);
             } else updateQueue.Enqueue(() => RespawnInLobby(state));
         }
@@ -231,18 +240,29 @@ namespace Celeste.Mod.Madhunt {
                 ses.Area = roundState.settings.arenaArea;
                 ses.Level = roundState.settings.spawnLevel;
                 ses.Inventory.DreamDash = true;
+                ResetArenaKeys(roundState, ses, (Celeste.Scene as Level)?.Tracker?.GetEntity<Player>());
                 LevelLoader loader = new LevelLoader(ses);
                 arenaLoadLevel = loader.Level;
                 Celeste.Scene = loader;
             } else updateQueue.Enqueue(() => RespawnInArena());
         }
         
+        private void ResetArenaKeys(RoundState state, Session ses, Player player) {
+            foreach(EntityID key in ses.Keys) ses.DoNotLoad.Remove(key);
+            ses.Keys.Clear();
+
+            foreach(Follower follower in (IEnumerable<Follower>) player?.Leader?.Followers?.Where(f => f?.Entity is Key)?.ToList() ?? Array.Empty<Follower>()) follower?.Leader?.LoseFollower(follower);
+
+            foreach(EntityID id in state.openedLockBlocks) ses.DoNotLoad.Remove(id);
+            state.openedLockBlocks.Clear();
+        }
+
         private DataMadhuntStateUpdate GetGhostState(DataPlayerInfo info) {
             DataMadhuntStateUpdate ghostState = null;
             if(!(module.Context?.Client?.Data?.TryGetBoundRef<DataPlayerInfo,DataMadhuntStateUpdate>(info.ID, out ghostState) ?? false)) return null;
             return ghostState;
         }
-        private IEnumerable<DataMadhuntStateUpdate> GetGhostStates() => module?.Context?.Client?.Data?.GetRefs<DataPlayerInfo>().Where(i => i != module?.Context?.Client?.PlayerInfo && !string.IsNullOrEmpty(i.DisplayName)).Select(i => GetGhostState(i)).Where(s => s != null) ?? Enumerable.Empty<DataMadhuntStateUpdate>();
+        private IEnumerable<DataMadhuntStateUpdate> GetGhostStates() => module?.Context?.Client?.Data?.GetRefs<DataPlayerInfo>().Where(i => !string.IsNullOrEmpty(i.DisplayName)).Select(i => GetGhostState(i)).Where(s => s != null && s.Player != module?.Context?.Client?.PlayerInfo) ?? Enumerable.Empty<DataMadhuntStateUpdate>();
 
         private void LevelLoadHook(Level lvl, Player.IntroTypes intro, bool fromLoader) {
             //Disable save and quit when in a round
@@ -250,7 +270,7 @@ namespace Celeste.Mod.Madhunt {
         }
 
         private void ExitHook(Level lvl, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow) {
-            if(arenaLoadLevel == null) State = null;
+            State = null;
         }
 
         private Player PlayerLoadHook(On.Celeste.Level.orig_LoadNewPlayer orig, Vector2 pos, PlayerSpriteMode smode) {
@@ -304,6 +324,7 @@ namespace Celeste.Mod.Madhunt {
                 Action oldDeathAct = body.DeathAction;
                 body.DeathAction = () => {
                     oldDeathAct();
+                    if(roundState == null) return;
                     State = PlayerState.SEEKER;
                     CheckRoundEnd(false, ended => { if(!ended) RespawnInArena(); });
                 };
@@ -323,6 +344,11 @@ namespace Celeste.Mod.Madhunt {
             return false;
         }
 
+        private IEnumerator LockBlockUnlockHook(On.Celeste.LockBlock.orig_UnlockRoutine orig, LockBlock lockBlock, Follower follower) {
+            if(roundState != null) roundState.openedLockBlocks.Add(lockBlock.ID);
+            return orig(lockBlock, follower);
+        }
+
         private void GhostPlayerCollisionHook(Action<Ghost, Player> orig, Ghost ghost, Player player) {
             //Check if we collided with a seeker ghost as a hider
             DataMadhuntStateUpdate ghostState = GetGhostState(ghost.PlayerInfo);
@@ -333,6 +359,7 @@ namespace Celeste.Mod.Madhunt {
 
                     //Turn the player into a seeker
                     player.Die(ghost.Speed, evenIfInvincible: true).DeathAction = () => {
+                        if(roundState == null) return;
                         State = PlayerState.SEEKER;
                         CheckRoundEnd(false, ended => { if(!ended) RespawnInArena(); });
                     };

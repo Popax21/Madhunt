@@ -39,7 +39,7 @@ namespace Celeste.Mod.Madhunt {
             if(ses == null || ses.Area != data.RoundSettings.lobbyArea || ses.Level != data.RoundSettings.lobbyLevel) return;
 
             //Check if the zone ID matches
-            if(data.StartZoneID.HasValue && !(Celeste.Scene.Tracker.GetEntity<Player>()?.CollideAll<StartZone>().Cast<StartZone>().Any(sz => data.StartZoneID != sz.ID) ?? false)) return;
+            if(data.StartZoneID.HasValue && !(Celeste.Scene.Tracker.GetEntity<Player>()?.CollideAll<StartZone>().Cast<StartZone>().Any(sz => data.StartZoneID == sz.ID) ?? false)) return;
 
             //Check if there's an arena option which produces these settings
             foreach(ArenaOption option in lvl.Tracker.GetEntities<ArenaOption>()) {

@@ -1,6 +1,7 @@
 Madhunt= Madhunt
 Madhunt_01_Forsaken_City= Forsaken City Arenas
 Madhunt_02_Old_Site= Old Site Arenas
+Madhunt_03_Celestial_Resort= Celestial Resort Arenas
 
 Madhunt_ArenaA= A-Side
 Madhunt_ArenaB= B-Side
