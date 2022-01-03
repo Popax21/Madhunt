@@ -1,10 +1,10 @@
 - Name: Madhunt
-  Version: 2.3.0
+  Version: 2.3.1
   DLL: Madhunt.dll
   Dependencies:
     - Name: Everest
       Version: 1.0.0
     - Name: CelesteNet.Client
-      Version: 1.1
+      Version: 2.0
     - Name: Procedurline
       Version: 1.0
