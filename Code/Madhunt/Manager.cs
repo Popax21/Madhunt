@@ -279,7 +279,7 @@ namespace Celeste.Mod.Madhunt {
                 arenaLoadLevel = null;
 
                 //Set the start timer
-                startTimer = 5f;
+                startTimer = 0.3f;
 
                 //Change the sprite mode
                 Player player = orig(pos, State switch {
