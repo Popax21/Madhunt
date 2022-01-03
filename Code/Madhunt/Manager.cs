@@ -323,8 +323,8 @@ namespace Celeste.Mod.Madhunt {
             if(body != null && InRound && roundState.settings.goldenMode && State == PlayerState.HIDER) {
                 Action oldDeathAct = body.DeathAction;
                 body.DeathAction = () => {
-                    oldDeathAct();
-                    if(roundState == null) return;
+                    oldDeathAct?.Invoke();
+                    if(!InRound) return;
                     State = PlayerState.SEEKER;
                     CheckRoundEnd(false, ended => { if(!ended) RespawnInArena(); });
                 };
