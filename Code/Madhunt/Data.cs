@@ -109,10 +109,10 @@ namespace Celeste.Mod.Madhunt {
         public DataPlayerInfo Player;
         public (string roundID, int seed, PlayerState state)? RoundState;
 
-        public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerPrivateState(Player), new MetaBoundRef(DataType<DataPlayerInfo>.DataID, Player?.ID ?? uint.MaxValue, true) };
+        public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerPublicState(Player), new MetaBoundRef(DataType<DataPlayerInfo>.DataID, Player?.ID ?? uint.MaxValue, true) };
 
         public override void FixupMeta(DataContext ctx) {
-            Player = Get<MetaPlayerPrivateState>(ctx);
+            Player = Get<MetaPlayerPublicState>(ctx);
             Get<MetaBoundRef>(ctx).ID = Player?.ID ?? uint.MaxValue;
         }
 
