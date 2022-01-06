@@ -18,7 +18,7 @@ namespace Celeste.Mod.Madhunt {
         public bool tagMode, goldenMode;
         public bool hideNames;
 
-        public string RoundID => $"{arenaArea.SID}#{arenaArea.Mode}#{spawnLevel}#{spawnIndex}#{tagMode}#{goldenMode}#{Module.Instance.Metadata.Version.Major}.{Module.Instance.Metadata.Version.Minor}";
+        public string RoundID => $"{arenaArea.SID}#{arenaArea.Mode}#{spawnLevel}#{Module.Instance.Metadata.Version.Major}.{Module.Instance.Metadata.Version.Minor}";
     }
 
     public enum PlayerState {
