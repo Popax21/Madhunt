@@ -21,7 +21,7 @@ namespace Celeste.Mod.Madhunt {
             public RoundSettings settings;
             public int playerSeed;
             public PlayerState playerState;
-            public bool initialSpawn, othersJoined, isWinner;
+            public bool initialSpawn, skipEndCheck, isWinner;
             public HashSet<EntityID> openedLockBlocks;
         }
 
@@ -98,7 +98,7 @@ namespace Celeste.Mod.Madhunt {
                 startDelayTimer += Engine.RawDeltaTime;
                 Engine.TimeRate = (float) Math.Exp(-4f * startDelayTimer);
 
-                if(startDelayTimer > 1.5f) {
+                if(startDelayTimer > 1f) {
                     //Check if anyone else is in the same round
                     if(!GetGhostStates().Any(ghostState => ghostState.RoundState != null && ghostState.RoundState.Value.roundID == roundState.settings.RoundID)) {
                         Engine.TimeRate = 1f;
@@ -158,7 +158,7 @@ namespace Celeste.Mod.Madhunt {
             if(roundState != null) return;
             
             //Create round state
-            roundState = new RoundState() { settings = settings, playerSeed = Calc.Random.Next(int.MinValue, int.MaxValue), initialSpawn = true, othersJoined = false, isWinner = false, openedLockBlocks = new HashSet<EntityID>() };
+            roundState = new RoundState() { settings = settings, playerSeed = Calc.Random.Next(int.MinValue, int.MaxValue), initialSpawn = true, skipEndCheck = true, isWinner = false, openedLockBlocks = new HashSet<EntityID>() };
             State = PlayerState.SEEDWAIT;
             startDelayTimer = 0;
             Logger.Log(Module.Name, $"Starting Madhunt {roundState.settings.RoundID} with seed {roundState.playerSeed}");
@@ -187,16 +187,10 @@ namespace Celeste.Mod.Madhunt {
             });
         }
 
-        private void CheckRoundEnd(bool endIfEmpty = true, Action<bool> callback = null) {
+        private void CheckRoundEnd(Action<bool> callback = null) {
             if(!InRound) return;
 
-            //Check if the round's empty, and we shouldn't end the round if that's the case
-            if(!endIfEmpty && !GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID)) {
-                callback?.Invoke(false);
-                return;
-            }
-
-            //If we're the only remaining hider
+            //Check if we're the only remaining hider
             if(State == PlayerState.HIDER && !GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) {
                 roundState.isWinner = true;
                 callback?.Invoke(false);
@@ -204,14 +198,17 @@ namespace Celeste.Mod.Madhunt {
             }
 
             //Check if there are both hiders and seekers left
+            //Skip this check if the round just started
             if(
                 (State == PlayerState.HIDER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) &&
                 (State == PlayerState.SEEKER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.SEEKER))
             ) {
+                roundState.skipEndCheck = false;
                 roundState.isWinner = false;
                 callback?.Invoke(false);
                 return;
             }
+            if(roundState.skipEndCheck) return;
 
             //End the round
             StopRound();
@@ -326,7 +323,7 @@ namespace Celeste.Mod.Madhunt {
                     oldDeathAct?.Invoke();
                     if(!InRound) return;
                     State = PlayerState.SEEKER;
-                    CheckRoundEnd(false, ended => { if(!ended) RespawnInArena(); });
+                    CheckRoundEnd(ended => { if(!ended) RespawnInArena(); });
                 };
             }
             return body;
@@ -361,7 +358,7 @@ namespace Celeste.Mod.Madhunt {
                     player.Die(ghost.Speed, evenIfInvincible: true).DeathAction = () => {
                         if(roundState == null) return;
                         State = PlayerState.SEEKER;
-                        CheckRoundEnd(false, ended => { if(!ended) RespawnInArena(); });
+                        CheckRoundEnd(ended => { if(!ended) RespawnInArena(); });
                     };
                 } else if(State == ghostState?.RoundState?.state) {
                     //Only handle the collision if the ghost has the same role
@@ -407,12 +404,11 @@ namespace Celeste.Mod.Madhunt {
 
         public void Handle(CelesteNetConnection con, DataMadhuntStateUpdate data) {
             updateQueue.Enqueue(() => {
-                if(roundState != null && data.RoundState?.roundID == roundState.settings.RoundID) roundState.othersJoined = true;
-                CheckRoundEnd(roundState?.othersJoined ?? false);
+                CheckRoundEnd();
             });
         }
         
-        public void Handle(CelesteNetConnection con, DataPlayerInfo data) => MainThreadHelper.Do(() => CheckRoundEnd(roundState?.othersJoined ?? false));
+        public void Handle(CelesteNetConnection con, DataPlayerInfo data) => MainThreadHelper.Do(() => CheckRoundEnd());
 
         public bool InRound => roundState != null && roundState.playerState != PlayerState.SEEDWAIT;
         public PlayerState? State {
