@@ -31,7 +31,7 @@ namespace Celeste.Mod.Madhunt {
 
         private RoundState roundState = null;
         private Level arenaLoadLevel = null;
-        private float startDelayTimer = -1f, startTimer = 0f;
+        private float startDelayTimer = 0f, startTimer = 0f;
         private ConcurrentQueue<Action> updateQueue = new ConcurrentQueue<Action>();
 
         public Manager(Game game) : base(game) {
@@ -96,9 +96,9 @@ namespace Celeste.Mod.Madhunt {
             //Update start delay timer
             if(roundState != null && !InRound) {
                 startDelayTimer += Engine.RawDeltaTime;
-                Engine.TimeRate = (float) Math.Exp(-6f * startDelayTimer);
+                Engine.TimeRate = (float) Math.Exp(-4f * startDelayTimer);
 
-                if(startDelayTimer > 0.75f) {
+                if(startDelayTimer > 1.5f) {
                     //Check if anyone else is in the same round
                     if(!GetGhostStates().Any(ghostState => ghostState.RoundState != null && ghostState.RoundState.Value.roundID == roundState.settings.RoundID)) {
                         Engine.TimeRate = 1f;
@@ -412,7 +412,7 @@ namespace Celeste.Mod.Madhunt {
             });
         }
         
-        public void Handle(CelesteNetConnection con, DataPlayerInfo data) => MainThreadHelper.Do(() => CheckRoundEnd());
+        public void Handle(CelesteNetConnection con, DataPlayerInfo data) => MainThreadHelper.Do(() => CheckRoundEnd(roundState?.othersJoined ?? false));
 
         public bool InRound => roundState != null && roundState.playerState != PlayerState.SEEDWAIT;
         public PlayerState? State {
