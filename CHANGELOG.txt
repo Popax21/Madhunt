@@ -1,3 +1,6 @@
+---------- CHANGELOG VERSION 1.4.1 ----------
+- Fix me screwing up protocol IDs
+
 ---------- CHANGELOG VERSION 1.4.0 ----------
 - Many bugfixes
 - Added protocol versions
