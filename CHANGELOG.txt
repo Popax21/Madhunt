@@ -1,3 +1,7 @@
+---------- CHANGELOG VERSION 1.4.0 ----------
+- Many bugfixes
+- Added protocol versions
+
 ---------- CHANGELOG VERSION 1.3.2 ----------
 - Fix start switch bugs
 
