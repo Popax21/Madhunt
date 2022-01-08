@@ -4,6 +4,8 @@ using MonoMod.RuntimeDetour;
 
 namespace Celeste.Mod.Madhunt {
     public class Module : EverestModule {
+        public const byte PROTOCOL_VERSION = 1;
+
         public static Module Instance { get; private set; }
         public static string Name => Instance.Metadata.Name;
         public Module() { Instance = this; }

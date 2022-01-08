@@ -26,7 +26,7 @@ namespace Celeste.Mod.Madhunt {
     }
     
     public class DataMadhuntRoundStart : DataType<DataMadhuntRoundStart> {
-        static DataMadhuntRoundStart() => DataID = "madhuntRoundStart";
+        static DataMadhuntRoundStart() => DataID = "madhuntRoundStartV{Module.PROTOCOL_VERSION}";
         
         public int MajorVersion, MinorVersion;
         public DataPlayerInfo StartPlayer;
@@ -83,7 +83,7 @@ namespace Celeste.Mod.Madhunt {
     }
 
     public class DataMadhuntRoundEnd : DataType<DataMadhuntRoundEnd> {
-        static DataMadhuntRoundEnd() => DataID = "madhuntRoundEnd";
+        static DataMadhuntRoundEnd() => DataID = "madhuntRoundEndV{Module.PROTOCOL_VERSION}";
 
         public DataPlayerInfo EndPlayer;
         public string RoundID;
@@ -104,7 +104,7 @@ namespace Celeste.Mod.Madhunt {
     }
 
     public class DataMadhuntStateUpdate : DataType<DataMadhuntStateUpdate> {
-        static DataMadhuntStateUpdate() => DataID = "madhuntStateUpdate";
+        static DataMadhuntStateUpdate() => DataID = $"madhuntStateUpdateV{Module.PROTOCOL_VERSION}";
 
         public DataPlayerInfo Player;
         public (string roundID, int seed, PlayerState state)? RoundState;
