@@ -191,11 +191,7 @@ namespace Celeste.Mod.Madhunt {
             if(!InRound) return;
 
             //Check if we're the only remaining hider
-            if(State == PlayerState.HIDER && !GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) {
-                roundState.isWinner = true;
-                callback?.Invoke(false);
-                return;
-            }
+            if(State == PlayerState.HIDER && !GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) roundState.isWinner = true;
 
             //Check if there are both hiders and seekers left
             //Skip this check if the round just started
