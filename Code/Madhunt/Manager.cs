@@ -364,7 +364,11 @@ namespace Celeste.Mod.Madhunt {
         }
 
         private void GhostNameTagRenderHook(Action<GhostNameTag> orig, GhostNameTag nameTag) {
-            if(!InRound || !roundState.settings.hideNames || !(nameTag.Tracking is Ghost ghost) || GetGhostState(ghost.PlayerInfo)?.RoundState is var ghostState || ghostState?.roundID != roundState.settings.RoundID || ghostState?.state == State) orig(nameTag);
+            if(InRound && roundState.settings.hideNames && 
+                nameTag.Tracking is Ghost ghost && GetGhostState(ghost.PlayerInfo)?.RoundState is var ghostState &&
+                ghostState?.roundID == roundState.settings.RoundID && ghostState?.state != State
+            ) return;
+            orig(nameTag);
         }
 
         public void Handle(CelesteNetConnection con, DataMadhuntRoundStart data) {
