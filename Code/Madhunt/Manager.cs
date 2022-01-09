@@ -211,6 +211,12 @@ namespace Celeste.Mod.Madhunt {
             callback?.Invoke(true);
         }
 
+        private void UpdateFlags(Session ses) {
+            ses.SetFlag("Madhunt_InRound", InRound && State != PlayerState.SEEDWAIT);
+            ses.SetFlag("Madhunt_IsHider", InRound && State == PlayerState.HIDER);
+            ses.SetFlag("Madhunt_IsSeeker", InRound && State == PlayerState.SEEKER);
+        }
+
         private void RespawnInLobby(RoundState state=null) {
             state ??= roundState;
 
@@ -226,6 +232,7 @@ namespace Celeste.Mod.Madhunt {
                 ses.LevelFlags = state.oldLevelFlags ?? ses.LevelFlags;
                 ses.DoNotLoad = state.oldDoNotLoad ?? ses.DoNotLoad;
                 if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
+                UpdateFlags(ses);
 
                 Celeste.Scene = new LevelLoader(ses, ses.RespawnPoint);
             } else updateQueue.Enqueue(() => RespawnInLobby(state));
@@ -243,6 +250,7 @@ namespace Celeste.Mod.Madhunt {
                 roundState.oldLevelFlags = ses.LevelFlags;
                 roundState.oldDoNotLoad = ses.DoNotLoad;
                 if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
+                UpdateFlags(ses);
 
                 LevelLoader loader = new LevelLoader(ses);
                 arenaLoadLevel = loader.Level;
@@ -412,6 +420,7 @@ namespace Celeste.Mod.Madhunt {
                 //Change round state 
                 if(value.HasValue) roundState.playerState = value.Value; 
                 else roundState = null;
+                if(Celeste.Scene is Level lvl) UpdateFlags(lvl.Session);
 
                 //Send state update packet
                 module?.Context?.Client?.Send<DataMadhuntStateUpdate>(new DataMadhuntStateUpdate() {

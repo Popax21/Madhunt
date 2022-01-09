@@ -62,3 +62,12 @@ Provides the location either hiders or seekers spawn in the arena. However, thes
 
 ## Hider Win Heart
 Can only be collected by hiders. When collected, makes all hiders in the current round win.
+
+# Flags
+Madhunt sets some flags which you can use in your map:
+
+`Madhunt_InRound`: Set to true if the player is currently in a round
+
+`Madhunt_IsHider`: Set to true if the player is currently a hider
+
+`Madhunt_IsSeeker`: Set to true if the player is currently a seeker
