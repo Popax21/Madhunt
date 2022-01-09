@@ -22,7 +22,8 @@ namespace Celeste.Mod.Madhunt {
             public int playerSeed;
             public PlayerState playerState;
             public bool initialSpawn, skipEndCheck, isWinner;
-            public HashSet<EntityID> openedLockBlocks;
+            public HashSet<string> oldFlags, oldLevelFlags;
+            public HashSet<EntityID> oldDoNotLoad;
         }
 
         private CelesteNetClientModule module;
@@ -45,7 +46,6 @@ namespace Celeste.Mod.Madhunt {
             On.Celeste.Level.EnforceBounds += EnforceBoundsHook;
             On.Celeste.Player.Die += DieHook;
             On.Celeste.Holdable.Pickup += PickupHook;
-            On.Celeste.LockBlock.UnlockRoutine += LockBlockUnlockHook;
 
             //Install CelesteNet context hooks
             EventInfo initEvt = typeof(CelesteNetClientContext).GetEvent("OnInit");
@@ -158,7 +158,7 @@ namespace Celeste.Mod.Madhunt {
             if(roundState != null) return;
             
             //Create round state
-            roundState = new RoundState() { settings = settings, playerSeed = Calc.Random.Next(int.MinValue, int.MaxValue), initialSpawn = true, skipEndCheck = true, isWinner = false, openedLockBlocks = new HashSet<EntityID>() };
+            roundState = new RoundState() { settings = settings, playerSeed = Calc.Random.Next(int.MinValue, int.MaxValue), initialSpawn = true, skipEndCheck = true, isWinner = false };
             State = PlayerState.SEEDWAIT;
             startDelayTimer = 0;
             Logger.Log(Module.Name, $"Starting Madhunt {roundState.settings.RoundID} with seed {roundState.playerSeed}");
@@ -221,7 +221,12 @@ namespace Celeste.Mod.Madhunt {
                 ses.Level = state.settings.lobbyLevel;
                 ses.RespawnPoint = state.settings.lobbySpawnPoint;
                 ses.Inventory.DreamDash = state.isWinner;
-                ResetArenaKeys(state, ses, (Celeste.Scene as Level)?.Tracker?.GetEntity<Player>());
+
+                ses.Flags = state.oldFlags ?? ses.Flags;
+                ses.LevelFlags = state.oldLevelFlags ?? ses.LevelFlags;
+                ses.DoNotLoad = state.oldDoNotLoad ?? ses.DoNotLoad;
+                if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
+
                 Celeste.Scene = new LevelLoader(ses, ses.RespawnPoint);
             } else updateQueue.Enqueue(() => RespawnInLobby(state));
         }
@@ -233,21 +238,16 @@ namespace Celeste.Mod.Madhunt {
                 ses.Area = roundState.settings.arenaArea;
                 ses.Level = roundState.settings.spawnLevel;
                 ses.Inventory.DreamDash = true;
-                ResetArenaKeys(roundState, ses, (Celeste.Scene as Level)?.Tracker?.GetEntity<Player>());
+
+                roundState.oldFlags = ses.Flags;
+                roundState.oldLevelFlags = ses.LevelFlags;
+                roundState.oldDoNotLoad = ses.DoNotLoad;
+                if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
+
                 LevelLoader loader = new LevelLoader(ses);
                 arenaLoadLevel = loader.Level;
                 Celeste.Scene = loader;
             } else updateQueue.Enqueue(() => RespawnInArena());
-        }
-        
-        private void ResetArenaKeys(RoundState state, Session ses, Player player) {
-            foreach(EntityID key in ses.Keys) ses.DoNotLoad.Remove(key);
-            ses.Keys.Clear();
-
-            foreach(Follower follower in (IEnumerable<Follower>) player?.Leader?.Followers?.Where(f => f?.Entity is Key)?.ToList() ?? Array.Empty<Follower>()) follower?.Leader?.LoseFollower(follower);
-
-            foreach(EntityID id in state.openedLockBlocks) ses.DoNotLoad.Remove(id);
-            state.openedLockBlocks.Clear();
         }
 
         private DataMadhuntStateUpdate GetGhostState(DataPlayerInfo info) {
@@ -335,11 +335,6 @@ namespace Celeste.Mod.Madhunt {
 
             //Don't allow grabbing between players in different states
             return false;
-        }
-
-        private IEnumerator LockBlockUnlockHook(On.Celeste.LockBlock.orig_UnlockRoutine orig, LockBlock lockBlock, Follower follower) {
-            if(roundState != null) roundState.openedLockBlocks.Add(lockBlock.ID);
-            return orig(lockBlock, follower);
         }
 
         private void GhostPlayerCollisionHook(Action<Ghost, Player> orig, Ghost ghost, Player player) {
