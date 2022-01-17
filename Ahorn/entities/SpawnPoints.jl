@@ -16,7 +16,6 @@ function Ahorn.selection(entity::HiderSpawnPoint)
     return Ahorn.getSpriteRectangle(sprite, x, y, jx=0.5, jy=1);
 end
 
-
 function Ahorn.selection(entity::SeekerSpawnPoint)
     x, y = Ahorn.position(entity)
     return Ahorn.getSpriteRectangle(sprite, x, y, jx=0.5, jy=1);

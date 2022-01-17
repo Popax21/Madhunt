@@ -7,3 +7,63 @@ Madhunt_ArenaA= A-Side
 Madhunt_ArenaB= B-Side
 Madhunt_ArenaC= C-Side
 Madhunt_ArenaRandom= Random Arena
+
+Madhunt_03_Oshiro_Secret=
+    [MADELINE left normal]
+        Oh, Hi {+MROSHIRO}!
+
+    [OSHIRO right nervous]
+        O-oh.. Hello {+MS_MADELINE}!
+    [OSHIRO right sidesuspicious]
+        {+thought}You didn't teleport here, right?{+endthought}
+
+    [OSHIRO right normal]
+        Anyway, I want to tell you about the {# 96EFFF}{~}{!}Celeste Community Direct{/~}{/!}{#}
+
+    [MADELINE left distracted]
+        Um... doesn't everyone know what it is already?
+
+    [OSHIRO right nervous]
+        ...
+    [OSHIRO right normal]
+        Anyway, thanks to {# 339CC7}Touhoe{#} and {# 339CC7}Nyan{#} for organizing this event!
+
+    [MADELINE left peaceful]
+        So you're giving credit... I appreciate it
+
+    {trigger 0 Badeline appears}
+
+    [BADELINE right angry]
+        {+MADELINE}, why are you still talking to this {~}creep{/~}?
+
+    [MADELINE left surprised]
+        {!}Aah!{/!} What are you doing here!?
+
+    [BADELINE right normal]
+        I'm just making sure you didn't forget about {# FF9523}{!}Madhunt{!}{#}'s creators.
+        {# 339CC7}Popax21{#} is responsible for all the coding, and {# 339CC7}Mateuszkus{#} created the maps
+    [BADELINE right scoff]
+        {# 339CC7}firelasto{#} originally came up with the idea.
+
+    {trigger 1 Badeline vanishes}
+
+    [OSHIRO left drama]
+        Oh, I almost forgot about that!
+    [OSHIRO right normal]
+        Big thank you to all the playtesters as well!
+        Join our Discord server linked in the {# FFFF4C}GameBanana{#} page
+    [OSHIRO right sidesuspicious]
+        {+thought}Only if you want to of course!{+endthought}
+
+    [MADELINE left normal]
+        Alright, it was nice meeting you!
+
+    [OSHIRO right normal]
+        Good luck out there {+MS_MADELINE}!
+        Don't let {+PART_OF_YOU} win!
+
+    [BADELINE left serious]
+        You know that I can still hear you?
+
+    [OSHIRO right nervous]
+        ...

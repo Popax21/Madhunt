@@ -1,0 +1,14 @@
+Mountain:
+    Idle:
+        Position: [ 5.961, 8.823, 5.058 ]
+        Target: [ 5.061, 7.757, 3.626 ]
+    Select:
+        Position: [ 4.294, 6.633, 5.193 ]
+        Target: [ 5.027, 6.828, 3.343 ]
+    Zoom:
+        Position: [ 5.200, 6.650, 2.595 ]
+        Target: [ 5.007, 6.391, 0.621 ]
+    Cursor: [ 4.993515, 6.881229, 1.536384 ]
+    State: 0
+    ShowCore: false
+    Rotate: false
