@@ -1,3 +1,7 @@
+---------- CHANGELOG VERSION v1.4.3 ----------
+- Added Celestial Resort arenas
+- Lots more bug fixes
+
 ---------- CHANGELOG VERSION 1.4.2 ----------
 - Fix nametags always rendering
 - Add `Madhunt_xxx` flags
