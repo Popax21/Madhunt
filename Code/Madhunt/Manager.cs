@@ -246,9 +246,9 @@ namespace Celeste.Mod.Madhunt {
                 ses.Level = roundState.settings.spawnLevel;
                 ses.Inventory.DreamDash = true;
 
-                roundState.oldFlags = ses.Flags;
-                roundState.oldLevelFlags = ses.LevelFlags;
-                roundState.oldDoNotLoad = ses.DoNotLoad;
+                roundState.oldFlags = ses.Flags.ToHashSet();
+                roundState.oldLevelFlags = ses.LevelFlags.ToHashSet();
+                roundState.oldDoNotLoad = ses.DoNotLoad.ToHashSet();
                 if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
                 UpdateFlags(ses);
 
