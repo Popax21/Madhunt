@@ -231,6 +231,7 @@ namespace Celeste.Mod.Madhunt {
                 ses.Flags = state.oldFlags ?? ses.Flags;
                 ses.LevelFlags = state.oldLevelFlags ?? ses.LevelFlags;
                 ses.DoNotLoad = state.oldDoNotLoad ?? ses.DoNotLoad;
+                ses.Keys.Clear();
                 if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
                 UpdateFlags(ses);
 
@@ -249,6 +250,7 @@ namespace Celeste.Mod.Madhunt {
                 roundState.oldFlags = ses.Flags.ToHashSet();
                 roundState.oldLevelFlags = ses.LevelFlags.ToHashSet();
                 roundState.oldDoNotLoad = ses.DoNotLoad.ToHashSet();
+                ses.Keys.Clear();
                 if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
                 UpdateFlags(ses);
 
