@@ -337,7 +337,7 @@ namespace Celeste.Mod.Madhunt {
 
         private bool PickupHook(On.Celeste.Holdable.orig_Pickup orig, Holdable holdable, Player player) {
             //Does the holdable belong to a ghost?
-            if(!InRound || !(holdable.Entity is Ghost ghost)) return orig(holdable, player);
+            if(!InRound || !roundState.settings.tagMode || !(holdable.Entity is Ghost ghost)) return orig(holdable, player);
 
             //Is the ghost in the same round and not in the same state?
             DataMadhuntStateUpdate ghostState = GetGhostState(ghost.PlayerInfo);
