@@ -92,6 +92,7 @@ namespace Celeste.Mod.Madhunt {
         public override void Update(GameTime gameTime) {
             //Update start timer
             if(startTimer > 0) startTimer -= (float) gameTime.ElapsedGameTime.TotalSeconds;
+            if((Celeste.Scene as Level)?.Transitioning ?? false && startTimer < 0.2f) startTimer = 0.2f;
             
             //Update start delay timer
             if(roundState != null && !InRound) {
@@ -352,8 +353,8 @@ namespace Celeste.Mod.Madhunt {
             DataMadhuntStateUpdate ghostState = GetGhostState(ghost.PlayerInfo);
             if(InRound && roundState.settings.tagMode && ghostState?.RoundState?.roundID == roundState.settings.RoundID) {
                 if(State == PlayerState.HIDER && ghostState?.RoundState?.state == PlayerState.SEEKER) {
-                    //Check the start timer
-                    if(startTimer > 0) return;
+                    //Check for invincibiliy
+                    if(startTimer > 0 || ((Celeste.Scene as Level)?.Transitioning ?? false)) return;
 
                     //Turn the player into a seeker
                     player.Die(ghost.Speed, evenIfInvincible: true).DeathAction = () => {
