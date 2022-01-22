@@ -23,7 +23,7 @@ namespace Celeste.Mod.Madhunt {
             public PlayerState playerState;
             public bool initialSpawn, skipEndCheck, isWinner;
             public HashSet<string> oldFlags, oldLevelFlags;
-            public HashSet<EntityID> oldDoNotLoad;
+            public HashSet<EntityID> oldDoNotLoad, oldKeys;
         }
 
         private CelesteNetClientModule module;
@@ -233,7 +233,7 @@ namespace Celeste.Mod.Madhunt {
                     ses.Flags = state.oldFlags ?? ses.Flags;
                     ses.LevelFlags = state.oldLevelFlags ?? ses.LevelFlags;
                     ses.DoNotLoad = state.oldDoNotLoad ?? ses.DoNotLoad;
-                    ses.Keys.Clear();
+                    ses.Keys = state.oldKeys ?? ses.Keys;
                     if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
                 }
                 UpdateFlags(ses);
@@ -254,6 +254,7 @@ namespace Celeste.Mod.Madhunt {
                     roundState.oldFlags = ses.Flags.ToHashSet();
                     roundState.oldLevelFlags = ses.LevelFlags.ToHashSet();
                     roundState.oldDoNotLoad = ses.DoNotLoad.ToHashSet();
+                    roundState.oldKeys = ses.Keys.ToHashSet();
                     ses.Keys.Clear();
                     if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
                 }
