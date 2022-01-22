@@ -1,3 +1,7 @@
+---------- CHANGELOG VERSION 1.4.4 ----------
+- Fix grabbing not working
+- Give the player invincibiliy when transitioning between rooms
+
 ---------- CHANGELOG VERSION v1.4.3 ----------
 - Added Celestial Resort arenas
 - Lots more bug fixes
