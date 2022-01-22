@@ -127,7 +127,7 @@ namespace Celeste.Mod.Madhunt {
                     State = state;
 
                     //Change the spawnpoint and respawn player
-                    RespawnInArena();
+                    RespawnInArena(true);
                 }
             }
 
@@ -175,7 +175,7 @@ namespace Celeste.Mod.Madhunt {
             State = null;
 
             //Respawn the player in the lobby
-            RespawnInLobby(state);
+            RespawnInLobby(true, state);
         }
 
         public void TriggerGlobalWin(PlayerState winningState) {
@@ -218,7 +218,7 @@ namespace Celeste.Mod.Madhunt {
             ses.SetFlag("Madhunt_IsSeeker", InRound && State == PlayerState.SEEKER);
         }
 
-        private void RespawnInLobby(RoundState state=null) {
+        private void RespawnInLobby(bool doReset, RoundState state=null) {
             state ??= roundState;
 
             Session ses = (Celeste.Scene as Level)?.Session;
@@ -229,18 +229,20 @@ namespace Celeste.Mod.Madhunt {
                 ses.RespawnPoint = state.settings.lobbySpawnPoint;
                 ses.Inventory.DreamDash = state.isWinner;
 
-                ses.Flags = state.oldFlags ?? ses.Flags;
-                ses.LevelFlags = state.oldLevelFlags ?? ses.LevelFlags;
-                ses.DoNotLoad = state.oldDoNotLoad ?? ses.DoNotLoad;
-                ses.Keys.Clear();
-                if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
+                if(doReset) {
+                    ses.Flags = state.oldFlags ?? ses.Flags;
+                    ses.LevelFlags = state.oldLevelFlags ?? ses.LevelFlags;
+                    ses.DoNotLoad = state.oldDoNotLoad ?? ses.DoNotLoad;
+                    ses.Keys.Clear();
+                    if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
+                }
                 UpdateFlags(ses);
 
                 Celeste.Scene = new LevelLoader(ses, ses.RespawnPoint);
-            } else updateQueue.Enqueue(() => RespawnInLobby(state));
+            } else updateQueue.Enqueue(() => RespawnInLobby(doReset, state));
         }
 
-        private void RespawnInArena() {
+        private void RespawnInArena(bool doReset) {
             Session ses = (Celeste.Scene as Level)?.Session;
             if(ses != null) {
                 //Change session
@@ -248,17 +250,19 @@ namespace Celeste.Mod.Madhunt {
                 ses.Level = roundState.settings.spawnLevel;
                 ses.Inventory.DreamDash = true;
 
-                roundState.oldFlags = ses.Flags.ToHashSet();
-                roundState.oldLevelFlags = ses.LevelFlags.ToHashSet();
-                roundState.oldDoNotLoad = ses.DoNotLoad.ToHashSet();
-                ses.Keys.Clear();
-                if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
+                if(doReset) {
+                    roundState.oldFlags = ses.Flags.ToHashSet();
+                    roundState.oldLevelFlags = ses.LevelFlags.ToHashSet();
+                    roundState.oldDoNotLoad = ses.DoNotLoad.ToHashSet();
+                    ses.Keys.Clear();
+                    if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
+                }
                 UpdateFlags(ses);
 
                 LevelLoader loader = new LevelLoader(ses);
                 arenaLoadLevel = loader.Level;
                 Celeste.Scene = loader;
-            } else updateQueue.Enqueue(() => RespawnInArena());
+            } else updateQueue.Enqueue(() => RespawnInArena(doReset));
         }
 
         private DataMadhuntStateUpdate GetGhostState(DataPlayerInfo info) {
@@ -330,7 +334,7 @@ namespace Celeste.Mod.Madhunt {
                     oldDeathAct?.Invoke();
                     if(!InRound) return;
                     State = PlayerState.SEEKER;
-                    CheckRoundEnd(ended => { if(!ended) RespawnInArena(); });
+                    CheckRoundEnd(ended => { if(!ended) RespawnInArena(false); });
                 };
             }
             return body;
@@ -360,7 +364,7 @@ namespace Celeste.Mod.Madhunt {
                     player.Die(ghost.Speed, evenIfInvincible: true).DeathAction = () => {
                         if(roundState == null) return;
                         State = PlayerState.SEEKER;
-                        CheckRoundEnd(ended => { if(!ended) RespawnInArena(); });
+                        CheckRoundEnd(ended => { if(!ended) RespawnInArena(false); });
                     };
                 } else if(State == ghostState?.RoundState?.state) {
                     //Only handle the collision if the ghost has the same role
