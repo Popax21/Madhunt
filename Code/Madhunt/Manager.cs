@@ -11,8 +11,6 @@ using Celeste.Mod.CelesteNet;
 using Celeste.Mod.CelesteNet.Client;
 using Celeste.Mod.CelesteNet.Client.Entities;
 using Celeste.Mod.CelesteNet.DataTypes;
-using Celeste.Mod.CelesteNet.Client.Components;
-using System.Collections;
 
 namespace Celeste.Mod.Madhunt {
     //TODO Rewrite this to be modular and not a big blob of logic
@@ -191,21 +189,23 @@ namespace Celeste.Mod.Madhunt {
         private void CheckRoundEnd(Action<bool> callback = null) {
             if(!InRound) return;
 
-            //Check if we're the only remaining hider
-            if(State == PlayerState.HIDER && !GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) roundState.isWinner = true;
-
             //Check if there are both hiders and seekers left
             //Skip this check if the round just started
             if(
                 (State == PlayerState.HIDER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) &&
                 (State == PlayerState.SEEKER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.SEEKER))
             ) {
+                //Check if we're the only remaining hider
+                roundState.isWinner = State == PlayerState.HIDER && !GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER);
+
                 roundState.skipEndCheck = false;
-                roundState.isWinner = false;
                 callback?.Invoke(false);
                 return;
             }
-            if(roundState.skipEndCheck) return;
+            if(roundState.skipEndCheck) {
+                callback?.Invoke(false);
+                return;
+            }
 
             //End the round
             StopRound();
