@@ -15,6 +15,8 @@ using Celeste.Mod.CelesteNet.DataTypes;
 namespace Celeste.Mod.Madhunt {
     //TODO Rewrite this to be modular and not a big blob of logic
     public class Manager : GameComponent {
+        private static readonly Random RANDOM = new Random();
+
         private class RoundState {
             public RoundSettings settings;
             public int playerSeed;
@@ -157,7 +159,7 @@ namespace Celeste.Mod.Madhunt {
             if(roundState != null) return;
             
             //Create round state
-            roundState = new RoundState() { settings = settings, playerSeed = new Random().Next(int.MinValue, int.MaxValue), initialSpawn = true, skipEndCheck = true, isWinner = false };
+            roundState = new RoundState() { settings = settings, playerSeed = RANDOM.Next(int.MinValue, int.MaxValue), initialSpawn = true, skipEndCheck = true, isWinner = false };
             State = PlayerState.SEEDWAIT;
             startDelayTimer = 0;
             Logger.Log(Module.Name, $"Starting Madhunt {roundState.settings.RoundID} with seed {roundState.playerSeed}");
