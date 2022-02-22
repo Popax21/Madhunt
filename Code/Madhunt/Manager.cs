@@ -167,20 +167,20 @@ namespace Celeste.Mod.Madhunt {
             if(roundState == null || State != PlayerState.SEEDWAIT) return false;
 
             //Check if anyone else is in the same round
-            if(!GetGhostStates().Any(ghostState => ghostState.RoundState != null && ghostState.RoundState.Value.roundID == roundState.settings.RoundID)) return false;
+            if(!GetGhostStates().Any(ghostState => ghostState.State != null && ghostState.State.Value.roundID == roundState.settings.RoundID)) return false;
 
             //Determine and set the player state
             PlayerState state;
             if(roundState.settings.initialSeekers > 0) {
                 state = (GetGhostStates().Count(ghostState => {
-                    if(ghostState.RoundState == null || ghostState.RoundState.Value.roundID != roundState.settings.RoundID) return false;
-                    int ghostSeed = ghostState.RoundState.Value.seed;
+                    if(ghostState.State == null || ghostState.State.Value.roundID != roundState.settings.RoundID) return false;
+                    int ghostSeed = ghostState.State.Value.seed;
                     return ghostSeed > roundState.playerSeed || (ghostSeed == roundState.playerSeed && ghostState.Player.ID > (module?.Context?.Client?.PlayerInfo?.ID ?? 0));
                 }) < roundState.settings.initialSeekers) ? PlayerState.SEEKER : PlayerState.HIDER;
             } else {
                 state = (GetGhostStates().Count(ghostState => {
-                    if(ghostState.RoundState == null || ghostState.RoundState.Value.roundID != roundState.settings.RoundID) return false;
-                    int ghostSeed = ghostState.RoundState.Value.seed;
+                    if(ghostState.State == null || ghostState.State.Value.roundID != roundState.settings.RoundID) return false;
+                    int ghostSeed = ghostState.State.Value.seed;
                     return ghostSeed > roundState.playerSeed || (ghostSeed == roundState.playerSeed && ghostState.Player.ID > (module?.Context?.Client?.PlayerInfo?.ID ?? 0));
                 }) < -roundState.settings.initialSeekers) ? PlayerState.HIDER : PlayerState.SEEKER;
             }
@@ -210,11 +210,11 @@ namespace Celeste.Mod.Madhunt {
             //Check if there are both hiders and seekers left
             //Skip this check if the round just started
             if(
-                (State == PlayerState.HIDER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER)) &&
-                (State == PlayerState.SEEKER || GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.SEEKER))
+                (State == PlayerState.HIDER || GetGhostStates().Any(state => state.State?.roundID == roundState.settings.RoundID && state.State?.state == PlayerState.HIDER)) &&
+                (State == PlayerState.SEEKER || GetGhostStates().Any(state => state.State?.roundID == roundState.settings.RoundID && state.State?.state == PlayerState.SEEKER))
             ) {
                 //Check if we're the only remaining hider
-                roundState.isWinner = State == PlayerState.HIDER && !GetGhostStates().Any(state => state.RoundState?.roundID == roundState.settings.RoundID && state.RoundState?.state == PlayerState.HIDER);
+                roundState.isWinner = State == PlayerState.HIDER && !GetGhostStates().Any(state => state.State?.roundID == roundState.settings.RoundID && state.State?.state == PlayerState.HIDER);
 
                 roundState.skipEndCheck = false;
                 return false;
@@ -375,7 +375,7 @@ namespace Celeste.Mod.Madhunt {
 
             //Is the ghost in the same round and not in the same state?
             DataMadhuntStateUpdate ghostState = GetGhostState(ghost.PlayerInfo);
-            if(ghostState?.RoundState == null || ghostState.RoundState.Value.roundID != roundState.settings.RoundID || ghostState.RoundState.Value.state == State) return orig(holdable, player);
+            if(ghostState?.State == null || ghostState.State.Value.roundID != roundState.settings.RoundID || ghostState.State.Value.state == State) return orig(holdable, player);
 
             //Don't allow grabbing between players in different states
             return false;
@@ -384,8 +384,8 @@ namespace Celeste.Mod.Madhunt {
         private void GhostPlayerCollisionHook(Action<Ghost, Player> orig, Ghost ghost, Player player) {
             //Check if we collided with a seeker ghost as a hider
             DataMadhuntStateUpdate ghostState = GetGhostState(ghost.PlayerInfo);
-            if(InRound && roundState.settings.tagMode && ghostState?.RoundState?.roundID == roundState.settings.RoundID) {
-                if(State == PlayerState.HIDER && ghostState?.RoundState?.state == PlayerState.SEEKER) {
+            if(InRound && roundState.settings.tagMode && ghostState?.State?.roundID == roundState.settings.RoundID) {
+                if(State == PlayerState.HIDER && ghostState?.State?.state == PlayerState.SEEKER) {
                     //Check for invincibiliy
                     if(invincTimer > 0 || ((Celeste.Scene as Level)?.Transitioning ?? false)) return;
 
@@ -395,7 +395,7 @@ namespace Celeste.Mod.Madhunt {
                         State = PlayerState.SEEKER;
                         if(!CheckRoundEnd()) RespawnInArena(false);
                     };
-                } else if(State == ghostState?.RoundState?.state) {
+                } else if(State == ghostState?.State?.state) {
                     //Only handle the collision if the ghost has the same role
                     //This prevents bouncing of seekers/hiders when interactions are enabled
                     orig(ghost, player);
@@ -406,7 +406,7 @@ namespace Celeste.Mod.Madhunt {
         private void GhostNameTagRenderHook(Action<GhostNameTag> orig, GhostNameTag nameTag) {
             //Don't render name tags of other roles (if disabled in the settings)
             if(InRound && roundState.settings.hideNames && 
-                nameTag.Tracking is Ghost ghost && GetGhostState(ghost.PlayerInfo)?.RoundState is var ghostState &&
+                nameTag.Tracking is Ghost ghost && GetGhostState(ghost.PlayerInfo)?.State is var ghostState &&
                 ghostState?.roundID == roundState.settings.RoundID && ghostState?.state != State
             ) return;
 
@@ -474,7 +474,11 @@ namespace Celeste.Mod.Madhunt {
                 //Send state update packet
                 module?.Context?.Client?.Send<DataMadhuntStateUpdate>(new DataMadhuntStateUpdate() {
                     Player = module?.Context?.Client?.PlayerInfo,
-                    RoundState = (roundState != null) ? ((string, int, PlayerState)?) (roundState.settings.RoundID, roundState.playerSeed, roundState.playerState) : null
+                    State = (roundState != null) ? new DataMadhuntStateUpdate.RoundState() {
+                        roundID = roundState.settings.RoundID,
+                        seed = roundState.playerSeed,
+                        state = roundState.playerState
+                    } : (DataMadhuntStateUpdate.RoundState?) null
                 });
             }
         }

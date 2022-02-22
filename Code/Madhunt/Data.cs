@@ -104,10 +104,16 @@ namespace Celeste.Mod.Madhunt {
     }
 
     public class DataMadhuntStateUpdate : DataType<DataMadhuntStateUpdate> {
+        public struct RoundState {
+            public string roundID;
+            public int seed;
+            public PlayerState state;
+        }
+
         static DataMadhuntStateUpdate() => DataID = $"madhuntStateUpdateV{Module.PROTOCOL_VERSION}";
 
         public DataPlayerInfo Player;
-        public (string roundID, int seed, PlayerState state)? RoundState;
+        public RoundState? State;
 
         public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerPublicState(Player), new MetaBoundRef(DataType<DataPlayerInfo>.DataID, Player?.ID ?? uint.MaxValue, true) };
 
@@ -117,16 +123,21 @@ namespace Celeste.Mod.Madhunt {
         }
 
         protected override void Read(CelesteNetBinaryReader reader) {
-            if(reader.ReadBoolean()) RoundState = (reader.ReadNetString(), reader.ReadInt32(), (PlayerState) reader.ReadByte());
-            else RoundState = null;
+            if(reader.ReadBoolean()) {
+                State = new RoundState() {
+                    roundID = reader.ReadNetString(), 
+                    seed = reader.ReadInt32(),
+                    state = (PlayerState) reader.ReadByte()
+                };
+            } else State = null;
         }
 
         protected override void Write(CelesteNetBinaryWriter writer) {
-            writer.Write(RoundState != null);
-            if(RoundState != null) {
-                writer.WriteNetString(RoundState.Value.roundID);
-                writer.Write(RoundState.Value.seed);
-                writer.Write((byte) RoundState.Value.state);
+            writer.Write(State != null);
+            if(State != null) {
+                writer.WriteNetString(State.Value.roundID);
+                writer.Write(State.Value.seed);
+                writer.Write((byte) State.Value.state);
             }
         }
     }
