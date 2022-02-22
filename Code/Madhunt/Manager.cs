@@ -15,6 +15,8 @@ using Celeste.Mod.CelesteNet.DataTypes;
 namespace Celeste.Mod.Madhunt {
     //TODO Rewrite this to be modular and not a big blob of logic
     public class Manager : GameComponent {
+        public const float START_DELAY = 1f, START_TIME_SLOWDOWN_FACTOR = 4f;
+        public const float TRANSITION_INVINCIBILITY = 0.25f, RESPAWN_INVINCIBILITY = 1f;
         private static readonly Random RANDOM = new Random();
 
         private class RoundState {
@@ -32,7 +34,7 @@ namespace Celeste.Mod.Madhunt {
 
         private RoundState roundState = null;
         private Level arenaLoadLevel = null;
-        private float startDelayTimer = 0f, startTimer = 0f;
+        private float startDelayTimer = 0f, invincTimer = 0f;
         private ConcurrentQueue<Action> updateQueue = new ConcurrentQueue<Action>();
 
         public Manager(Game game) : base(game) {
@@ -43,6 +45,7 @@ namespace Celeste.Mod.Madhunt {
             Everest.Events.Level.OnLoadLevel += LevelLoadHook;
             Everest.Events.Level.OnExit += ExitHook;
             On.Celeste.Level.LoadNewPlayer += PlayerLoadHook;
+            On.Celeste.Level.Reload += ReloadHook;
             On.Celeste.Level.EnforceBounds += EnforceBoundsHook;
             On.Celeste.Player.Die += DieHook;
             On.Celeste.Holdable.Pickup += PickupHook;
@@ -72,6 +75,7 @@ namespace Celeste.Mod.Madhunt {
             Everest.Events.Level.OnLoadLevel -= LevelLoadHook;
             Everest.Events.Level.OnExit -= ExitHook;
             On.Celeste.Level.LoadNewPlayer -= PlayerLoadHook;
+            On.Celeste.Level.Reload -= ReloadHook;
             On.Celeste.Level.EnforceBounds -= EnforceBoundsHook;
             On.Celeste.Player.Die -= DieHook;
             On.Celeste.Holdable.Pickup -= PickupHook;
@@ -90,16 +94,16 @@ namespace Celeste.Mod.Madhunt {
         }
 
         public override void Update(GameTime gameTime) {
-            //Update start timer
-            if(startTimer > 0) startTimer -= (float) gameTime.ElapsedGameTime.TotalSeconds;
-            if((Celeste.Scene as Level)?.Transitioning ?? false && startTimer < 0.2f) startTimer = 0.2f;
+            //Update the invincibility timer
+            if(invincTimer > 0) invincTimer -= (float) gameTime.ElapsedGameTime.TotalSeconds;
+            if((Celeste.Scene as Level)?.Transitioning ?? false && invincTimer < TRANSITION_INVINCIBILITY) invincTimer = TRANSITION_INVINCIBILITY;
             
-            //Update start delay timer
+            //Update the start delay timer
             if(roundState != null && !InRound) {
                 startDelayTimer += Engine.RawDeltaTime;
-                Engine.TimeRate = (float) Math.Exp(-4f * startDelayTimer);
+                Engine.TimeRate = (float) Math.Exp(-START_TIME_SLOWDOWN_FACTOR * startDelayTimer);
 
-                if(startDelayTimer > 1f) {
+                if(startDelayTimer > START_DELAY) {
                     Engine.TimeRate = 1f;
                     if(!EndSeedWait()) {
                         Logger.Log(Module.Name, $"Couldn't end seed wait successfully for Madhunt {roundState.settings.RoundID}");
@@ -289,7 +293,8 @@ namespace Celeste.Mod.Madhunt {
         }
 
         private void ExitHook(Level lvl, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow) {
-            State = null;
+            //Exit the round (if we're in one)
+            if(InRound) State = null;
         }
 
         private Player PlayerLoadHook(On.Celeste.Level.orig_LoadNewPlayer orig, Vector2 pos, PlayerSpriteMode smode) {
@@ -297,8 +302,8 @@ namespace Celeste.Mod.Madhunt {
                 Level arenaLevel = arenaLoadLevel;
                 arenaLoadLevel = null;
 
-                //Set the start timer
-                startTimer = 0.3f;
+                //Set the invincibility timer
+                if(invincTimer < RESPAWN_INVINCIBILITY) invincTimer = RESPAWN_INVINCIBILITY;
 
                 //Change the sprite mode
                 Player player = orig(pos, State switch {
@@ -326,11 +331,20 @@ namespace Celeste.Mod.Madhunt {
             }
         }
 
+        private void ReloadHook(On.Celeste.Level.orig_Reload orig, Level level) {
+            orig(level);
+            if(!InRound) return;
+
+            //Set the invincibility timer
+            if(invincTimer < RESPAWN_INVINCIBILITY) invincTimer = RESPAWN_INVINCIBILITY;
+        }
+
         private void EnforceBoundsHook(On.Celeste.Level.orig_EnforceBounds orig, Level level, Player player) {
             orig(level, player);
-            if(level.Transitioning || !InRound)
-                return;
-            
+            if(level.Transitioning || !InRound) return;
+
+            //Stop the player from going over the top of the screen (to prevent cheeky hiding spots)    
+            //Still allow for normal transitions though        
             if(player.Top < level.Bounds.Top && !level.Session.MapData.CanTransitionTo(level, player.TopCenter - Vector2.UnitY*12f)) {
                 player.Top = level.Bounds.Top;
                 player.OnBoundsV();
@@ -339,10 +353,14 @@ namespace Celeste.Mod.Madhunt {
 
         private PlayerDeadBody DieHook(On.Celeste.Player.orig_Die orig, Player player, Vector2 dir, bool evenIfInvincible, bool registerDeath) {
             PlayerDeadBody body = orig(player, dir, evenIfInvincible, registerDeath);
+
+            //If a hider dies while in a golden mode round, make them a seeker
             if(body != null && InRound && roundState.settings.goldenMode && State == PlayerState.HIDER) {
                 Action oldDeathAct = body.DeathAction;
                 body.DeathAction = () => {
                     oldDeathAct?.Invoke();
+
+                    //Turn the player into a seeker
                     if(!InRound) return;
                     State = PlayerState.SEEKER;
                     if(!CheckRoundEnd()) RespawnInArena(false);
@@ -369,7 +387,7 @@ namespace Celeste.Mod.Madhunt {
             if(InRound && roundState.settings.tagMode && ghostState?.RoundState?.roundID == roundState.settings.RoundID) {
                 if(State == PlayerState.HIDER && ghostState?.RoundState?.state == PlayerState.SEEKER) {
                     //Check for invincibiliy
-                    if(startTimer > 0 || ((Celeste.Scene as Level)?.Transitioning ?? false)) return;
+                    if(invincTimer > 0 || ((Celeste.Scene as Level)?.Transitioning ?? false)) return;
 
                     //Turn the player into a seeker
                     player.Die(ghost.Speed, evenIfInvincible: true).DeathAction = () => {
@@ -379,16 +397,19 @@ namespace Celeste.Mod.Madhunt {
                     };
                 } else if(State == ghostState?.RoundState?.state) {
                     //Only handle the collision if the ghost has the same role
+                    //This prevents bouncing of seekers/hiders when interactions are enabled
                     orig(ghost, player);
                 }
             } else orig(ghost, player);
         }
 
         private void GhostNameTagRenderHook(Action<GhostNameTag> orig, GhostNameTag nameTag) {
+            //Don't render name tags of other roles (if disabled in the settings)
             if(InRound && roundState.settings.hideNames && 
                 nameTag.Tracking is Ghost ghost && GetGhostState(ghost.PlayerInfo)?.RoundState is var ghostState &&
                 ghostState?.roundID == roundState.settings.RoundID && ghostState?.state != State
             ) return;
+
             orig(nameTag);
         }
 
@@ -401,6 +422,8 @@ namespace Celeste.Mod.Madhunt {
 
             updateQueue.Enqueue(() => {
                 //Check if we should start
+                //Do this by asking the verifiers if the packet is accepted
+                //This prevents attackers from spamming round start packets
                 if(roundState != null) return;
 
                 bool validSettings = false;
@@ -418,16 +441,26 @@ namespace Celeste.Mod.Madhunt {
         public void Handle(CelesteNetConnection con, DataMadhuntRoundEnd data) {
             updateQueue.Enqueue(() => {
                 if(roundState == null || data.RoundID != roundState.settings.RoundID) return;
+
+                //Stop the round
                 roundState.isWinner = (State == data.WinningState);
                 StopRound();
             });
         }
 
         public void Handle(CelesteNetConnection con, DataMadhuntStateUpdate data) {
-            updateQueue.Enqueue(() => CheckRoundEnd());
+            updateQueue.Enqueue(() => {
+                //Check if the round ended
+                CheckRoundEnd();
+            });
         }
         
-        public void Handle(CelesteNetConnection con, DataPlayerInfo data) => MainThreadHelper.Do(() => CheckRoundEnd());
+        public void Handle(CelesteNetConnection con, DataPlayerInfo data) {
+            updateQueue.Enqueue(() => {
+               //Check if the round ended
+                CheckRoundEnd();
+            });
+        }
 
         public bool InRound => roundState != null && roundState.playerState != PlayerState.SEEDWAIT;
         public PlayerState? State {
