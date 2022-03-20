@@ -17,7 +17,7 @@ namespace Celeste.Mod.Madhunt {
     public class Manager : GameComponent {
         public const float START_DELAY = 1f, START_TIME_SLOWDOWN_FACTOR = 4f;
         public const float TRANSITION_INVINCIBILITY = 0.25f, RESPAWN_INVINCIBILITY = 1f;
-        private static readonly Random RANDOM = new Random();
+        private static Random RANDOM = new Random();
 
         private class RoundState {
             public RoundSettings settings;
@@ -141,7 +141,12 @@ namespace Celeste.Mod.Madhunt {
             if(roundState != null) return;
 
             //Determine seed
-            int seed = RANDOM.Next(int.MinValue, int.MaxValue);
+            //Query the random number generator a random number of times, because it outputs total BS sometimes
+            //Also create a new random number generator sometimes
+            if(Environment.TickCount % 21 <= 3) RANDOM = new Random();
+            int numIter = Environment.TickCount % 16;
+            int seed;
+            do { seed = RANDOM.Next(int.MinValue, int.MaxValue); } while(numIter-- > 0);
 
             Logger.Log(Module.Name, $"Starting Madhunt {settings.RoundID} with seed {seed}");
             
@@ -390,7 +395,7 @@ namespace Celeste.Mod.Madhunt {
                     if(invincTimer > 0 || ((Celeste.Scene as Level)?.Transitioning ?? false)) return;
 
                     //Turn the player into a seeker
-                    player.Die(ghost.Speed, evenIfInvincible: true).DeathAction = () => {
+                    player.Die(Vector2.Zero, evenIfInvincible: true).DeathAction = () => {
                         if(roundState == null) return;
                         State = PlayerState.SEEKER;
                         if(!CheckRoundEnd()) RespawnInArena(false);
