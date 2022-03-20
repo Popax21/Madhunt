@@ -1,3 +1,8 @@
+---------- CHANGELOG VERSION 1.4.6 ----------
+- Added invincibility after respawning
+- Fixed players not getting loaded into lobbies
+- Fixed (?) random role selection not being random enough
+
 ---------- CHANGELOG VERSION 1.4.5 ----------
 - Fixed win flag beeing always false
 - Made seed RNG less deterministic
