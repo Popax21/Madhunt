@@ -26,25 +26,34 @@ namespace Celeste.Mod.Madhunt {
                 Player player = Scene.Tracker.GetEntity<Player>();
                 if(player != null) {
                     Camera cam = SceneAs<Level>().Camera;
+                    Color textCol = new Color(Calc.Map(sSwitch.disableLerp, 1f, 0.8f), Calc.Map(sSwitch.disableLerp, 1f, 0.8f), Calc.Map(sSwitch.disableLerp, 1f, 0.8f));
                     float alpha = Calc.Clamp(2f - Vector2.Distance(sSwitch.Position, Scene.Tracker.GetEntity<Player>().Position) / 64f, 0f, 1f);
                     switch(sSwitch.side) {
-                        case Sides.Left: ActiveFont.Draw(name, (sSwitch.CenterRight + Vector2.UnitX*8f - cam.Position.Floor()) * 6f, new Vector2(0f, 0.5f), Vector2.One, Color.White * alpha); break;
-                        case Sides.Right: ActiveFont.Draw(name, (sSwitch.CenterLeft - Vector2.UnitX*8f - cam.Position.Floor()) * 6f, new Vector2(1f, 0.5f), Vector2.One, Color.White * alpha); break;
-                        case Sides.Up: ActiveFont.Draw(name, (sSwitch.BottomCenter + Vector2.UnitY*8f - cam.Position.Floor()) * 6f, new Vector2(0.5f, 0f), Vector2.One, Color.White * alpha); break;
-                        case Sides.Down: ActiveFont.Draw(name, (sSwitch.TopCenter - Vector2.UnitY*8f - cam.Position.Floor()) * 6f, new Vector2(0.5f, 1f), Vector2.One, Color.White * alpha); break;
+                        case Sides.Left: ActiveFont.Draw(name, (sSwitch.CenterRight + Vector2.UnitX*8f - cam.Position.Floor()) * 6f, new Vector2(0f, 0.5f), Vector2.One, textCol * alpha); break;
+                        case Sides.Right: ActiveFont.Draw(name, (sSwitch.CenterLeft - Vector2.UnitX*8f - cam.Position.Floor()) * 6f, new Vector2(1f, 0.5f), Vector2.One, textCol * alpha); break;
+                        case Sides.Up: ActiveFont.Draw(name, (sSwitch.BottomCenter + Vector2.UnitY*8f - cam.Position.Floor()) * 6f, new Vector2(0.5f, 0f), Vector2.One, textCol * alpha); break;
+                        case Sides.Down: ActiveFont.Draw(name, (sSwitch.TopCenter - Vector2.UnitY*8f - cam.Position.Floor()) * 6f, new Vector2(0.5f, 1f), Vector2.One, textCol * alpha); break;
                     }
                 }
             }
         }
+
+        private const float SPRITE_COLOR_LERP_TIME = 0.5f;
+
         private static readonly FieldInfo PRESSED_FIELD = typeof(DashSwitch).GetField("pressed", BindingFlags.NonPublic | BindingFlags.Instance);
         private static On.Celeste.DashSwitch.hook_OnDashed dashHook;
         private static int dashHookCounter = 0;
+
         private Sides side;
+        private Sprite sprite;
+        private float disableLerp;
         private NameText nameText;
+        private StartZone startZone;
         private bool pressed = false;
 
         public StartSwitch(EntityData data, Vector2 offset) : base(data.Position + offset, (Sides) data.Int("side"), false, false, new EntityID(data.Level.Name, data.ID), "mirror") {
             side = (Sides) data.Int("side");
+            sprite = Components.Get<Sprite>();
             SwitchID = data.Int("switchID");
             nameText = string.IsNullOrEmpty(data.Attr("name")) ? null : new NameText(this, data.Attr("name"));
 
@@ -66,16 +75,35 @@ namespace Celeste.Mod.Madhunt {
             if(--dashHookCounter <= 0) On.Celeste.DashSwitch.OnDashed -= dashHook;
         }
 
+        public override void Awake(Scene scene) {
+            base.Awake(scene);
+            startZone = CollideFirst<StartZone>();
+        }
+
         public override void Update() {
             if(pressed) {
                 //Choose a random arena option
                 ArenaOption[] opts = Scene.Tracker.GetEntities<ArenaOption>().Cast<ArenaOption>().Where(o => o.CanChooseOption(this)).ToArray();
                 ArenaOption opt = (opts.Length > 0) ? Calc.Random.Choose(opts) : null;
 
-                //Start the manhunt
-                if(opt == null || !Module.MadhuntManager.StartRound(opt.Settings, CollideFirst<StartZone>()?.ID)) Scene.Tracker.GetEntity<Player>().Die(Vector2.Zero, true, false);
+                //Start the Madhunt
+                if(opt == null || !Module.MadhuntManager.StartRound(opt.Settings, startZone?.ID)) Scene.Tracker.GetEntity<Player>().Die(Vector2.Zero, true, false);
                 pressed = false;
             }
+
+            Player player = Scene.Tracker.GetEntity<Player>();
+            if(startZone != null && player != null) {
+                //Update start zone feedback
+                bool inZone = player.CollideCheck(startZone);
+
+                if(inZone && disableLerp > 0) disableLerp -= Engine.DeltaTime / SPRITE_COLOR_LERP_TIME;
+                else if(!inZone && disableLerp < 1) disableLerp += Engine.DeltaTime / SPRITE_COLOR_LERP_TIME;
+                disableLerp = Calc.Clamp(disableLerp, 0, 1);
+
+                sprite.Color = Color.Lerp(Color.White, Color.DimGray, disableLerp);
+                sprite.Rate = 1f - disableLerp;
+            }
+
             base.Update();
         }
 
