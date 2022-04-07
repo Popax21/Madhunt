@@ -26,7 +26,7 @@ namespace Celeste.Mod.Madhunt {
                 Player player = Scene.Tracker.GetEntity<Player>();
                 if(player != null) {
                     Camera cam = SceneAs<Level>().Camera;
-                    Color textCol = new Color(Calc.Map(sSwitch.disableLerp, 1f, 0.8f), Calc.Map(sSwitch.disableLerp, 1f, 0.8f), Calc.Map(sSwitch.disableLerp, 1f, 0.8f));
+                    Color textCol = new Color(1f - 0.65f*sSwitch.disableLerp, 1f - 0.65f*sSwitch.disableLerp, 1f - 0.65f*sSwitch.disableLerp);
                     float alpha = Calc.Clamp(2f - Vector2.Distance(sSwitch.Position, Scene.Tracker.GetEntity<Player>().Position) / 64f, 0f, 1f);
                     switch(sSwitch.side) {
                         case Sides.Left: ActiveFont.Draw(name, (sSwitch.CenterRight + Vector2.UnitX*8f - cam.Position.Floor()) * 6f, new Vector2(0f, 0.5f), Vector2.One, textCol * alpha); break;
@@ -100,7 +100,7 @@ namespace Celeste.Mod.Madhunt {
                 else if(!inZone && disableLerp < 1) disableLerp += Engine.DeltaTime / SPRITE_COLOR_LERP_TIME;
                 disableLerp = Calc.Clamp(disableLerp, 0, 1);
 
-                sprite.Color = Color.Lerp(Color.White, Color.DimGray, disableLerp);
+                sprite.Color = new Color(1f - 0.7f*disableLerp, 1f - 0.7f*disableLerp, 1f - 0.7f*disableLerp, 1f - 0.25f*disableLerp);
                 sprite.Rate = 1f - disableLerp;
             }
 
