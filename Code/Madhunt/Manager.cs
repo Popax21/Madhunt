@@ -24,6 +24,8 @@ namespace Celeste.Mod.Madhunt {
             public int playerSeed;
             public PlayerState playerState;
             public bool initialSpawn, skipEndCheck, isWinner;
+
+            public int? oldDashes;
             public HashSet<string> oldFlags, oldLevelFlags;
             public HashSet<EntityID> oldDoNotLoad, oldKeys;
         }
@@ -249,6 +251,7 @@ namespace Celeste.Mod.Madhunt {
                 ses.Inventory.DreamDash = state.isWinner;
 
                 if(doReset) {
+                    ses.Dashes = state.oldDashes ?? ses.Dashes;
                     ses.Flags = state.oldFlags ?? ses.Flags;
                     ses.LevelFlags = state.oldLevelFlags ?? ses.LevelFlags;
                     ses.DoNotLoad = state.oldDoNotLoad ?? ses.DoNotLoad;
@@ -270,6 +273,7 @@ namespace Celeste.Mod.Madhunt {
                 ses.Inventory.DreamDash = true;
 
                 if(doReset) {
+                    roundState.oldDashes = ses.Dashes;
                     roundState.oldFlags = ses.Flags.ToHashSet();
                     roundState.oldLevelFlags = ses.LevelFlags.ToHashSet();
                     roundState.oldDoNotLoad = ses.DoNotLoad.ToHashSet();
