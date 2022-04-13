@@ -124,7 +124,7 @@ namespace Celeste.Mod.Madhunt {
         }
 
         public bool StartRound(RoundSettings settings, int? startZoneID=null) {
-            if(module?.Context == null || !module.Client.IsReady || InRound) return false;
+            if(module?.Context == null || !module.Client.IsReady || roundState != null) return false;
 
             //Send start packet
             module.Context.Client.Send(new DataMadhuntRoundStart() {
