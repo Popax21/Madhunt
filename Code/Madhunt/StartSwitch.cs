@@ -87,7 +87,9 @@ namespace Celeste.Mod.Madhunt {
                 ArenaOption opt = (opts.Length > 0) ? Calc.Random.Choose(opts) : null;
 
                 //Start the Madhunt
-                if(opt == null || !Module.MadhuntManager.StartRound(opt.Settings, startZone?.ID)) Scene.Tracker.GetEntity<Player>().Die(Vector2.Zero, true, false);
+                if(opt == null || !Module.MadhuntManager.StartRound(opt.Settings, startZone?.ID)) {
+                    if(Module.MadhuntManager.State != null) Scene.Tracker.GetEntity<Player>().Die(Vector2.Zero, true, false);
+                }
                 pressed = false;
             }
 
