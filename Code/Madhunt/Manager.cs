@@ -262,6 +262,7 @@ namespace Celeste.Mod.Madhunt {
                 }
                 UpdateFlags(ses);
 
+                if(Celeste.Scene is Level level) level.Wipe?.Cancel();
                 Celeste.Scene = new LevelLoader(ses, ses.RespawnPoint);
             } else updateQueue.Enqueue(() => RespawnInLobby(doReset, state));
         }
@@ -285,6 +286,7 @@ namespace Celeste.Mod.Madhunt {
                 }
                 UpdateFlags(ses);
 
+                if(Celeste.Scene is Level level) level.Wipe?.Cancel();
                 LevelLoader loader = new LevelLoader(ses);
                 arenaLoadLevel = loader.Level;
                 Celeste.Scene = loader;
