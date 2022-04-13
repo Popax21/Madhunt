@@ -123,6 +123,8 @@ namespace Celeste.Mod.Madhunt {
             base.Update(gameTime);
         }
 
+        public bool SomeoneInRound(string roundID) => GetGhostStates().Any(s => s.State != null && s.State.Value.roundID == roundID);
+
         public bool StartRound(RoundSettings settings, int? startZoneID=null) {
             if(module?.Context == null || !module.Client.IsReady || roundState != null) return false;
 

@@ -82,11 +82,19 @@ namespace Celeste.Mod.Madhunt {
 
         public override void Update() {
             if(pressed) {
-                //Choose a random arena option
+                //Choose an arena option
                 ArenaOption[] opts = Scene.Tracker.GetEntities<ArenaOption>().Cast<ArenaOption>().Where(o => o.CanChooseOption(this)).ToArray();
-                ArenaOption opt = (opts.Length > 0) ? Calc.Random.Choose(opts) : null;
+                ArenaOption opt = null;
+                if(opts.Length > 0) {
+                    //Choose an option with an already active round
+                    ArenaOption[] activeOpts = opts.Where(o => Module.MadhuntManager.SomeoneInRound(o.Settings.RoundID)).ToArray();
+                    if(activeOpts.Length > 0) opt ??= Calc.Random.Choose(activeOpts);
 
-                //Start the Madhunt
+                     //Choose a random option
+                    opt ??= Calc.Random.Choose(opts);
+                } else Logger.Log(LogLevel.Warn, Module.Name, $"Couldn't find any arena options for start switch with ID {SwitchID}!");
+
+                //Start the round
                 if(opt == null || !Module.MadhuntManager.StartRound(opt.Settings, startZone?.ID)) {
                     if(Module.MadhuntManager.State != null) Scene.Tracker.GetEntity<Player>().Die(Vector2.Zero, true, false);
                 }
