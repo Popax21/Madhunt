@@ -15,7 +15,7 @@ namespace Celeste.Mod.Madhunt {
 
         public ArenaOption(EntityData data, Vector2 offset) {
             this.data = data;
-            this.switchIDs = data.Attr("switchIDs").Split(new[]{','}).Select(s => int.Parse(s)).ToHashSet();
+            this.switchIDs = new HashSet<int>(data.Attr("switchIDs").Split(new[]{','}).Select(s => int.Parse(s)));
         }
 
         public bool CanChooseOption(StartSwitch sSwitch) => switchIDs.Contains(sSwitch.SwitchID);

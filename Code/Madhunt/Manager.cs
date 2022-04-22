@@ -277,10 +277,10 @@ namespace Celeste.Mod.Madhunt {
 
                 if(doReset) {
                     roundState.oldDashes = ses.Dashes;
-                    roundState.oldFlags = ses.Flags.ToHashSet();
-                    roundState.oldLevelFlags = ses.LevelFlags.ToHashSet();
-                    roundState.oldDoNotLoad = ses.DoNotLoad.ToHashSet();
-                    roundState.oldKeys = ses.Keys.ToHashSet();
+                    roundState.oldFlags = new HashSet<string>(ses.Flags);
+                    roundState.oldLevelFlags = new HashSet<string>(ses.LevelFlags);
+                    roundState.oldDoNotLoad = new HashSet<EntityID>(ses.DoNotLoad);
+                    roundState.oldKeys = new HashSet<EntityID>(ses.Keys);
                     ses.Keys.Clear();
                     if(Celeste.Scene.Tracker.GetEntity<Player>() is Player player) player.Leader.LoseFollowers();
                 }
