@@ -25,6 +25,8 @@ namespace Celeste.Mod.Madhunt {
         }
 
         protected override void Dispose(bool disposing) {
+            base.Dispose(disposing);
+
             On.Celeste.Level.EnforceBounds -= OnEnforceBounds;
             On.Celeste.Level.LoadNewPlayer -= OnLoadNewPlayer;
             redDashCoroutineHook.Dispose();
@@ -64,7 +66,7 @@ namespace Celeste.Mod.Madhunt {
                 //Get the booster target
                 TransitionBoosterTarget target = transitionLevel.Tracker.GetEntities<TransitionBoosterTarget>().Cast<TransitionBoosterTarget>().Where(t => t.TargetID == transitionBooster.TargetID).FirstOrDefault();
                 if(target != null) player.Add(new Coroutine(TransitionRoutine(transitionLevel, player, target)));
-                else Logger.Log(LogLevel.Warn, Module.Name, $"Transition target {transitionBooster.TargetID} doesn't exist in level {transitionLevel.Session.Level}!");
+                else Logger.Log(LogLevel.Warn, MadhuntModule.Name, $"Transition target {transitionBooster.TargetID} doesn't exist in level {transitionLevel.Session.Level}!");
                 
                 transitionLevel = null;
                 transitionBooster = null;

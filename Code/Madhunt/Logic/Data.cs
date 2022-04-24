@@ -1,32 +1,9 @@
-using System;
-
-using Microsoft.Xna.Framework;
 using Celeste.Mod.CelesteNet;
 using Celeste.Mod.CelesteNet.DataTypes;
 
 namespace Celeste.Mod.Madhunt {
-    public struct RoundSettings {
-        public AreaKey lobbyArea;
-        public string lobbyLevel;
-        public Vector2 lobbySpawnPoint;
-
-        public AreaKey arenaArea;
-        public string spawnLevel;
-        public byte spawnIndex;
-
-        public int initialSeekers;
-        public bool tagMode, goldenMode;
-        public bool hideNames;
-
-        public string RoundID => $"{arenaArea.SID}#{arenaArea.Mode}#{spawnLevel}#{Module.Instance.Metadata.Version.Major}.{Module.Instance.Metadata.Version.Minor}";
-    }
-
-    public enum PlayerState {
-        SEEDWAIT, HIDER, SEEKER
-    }
-    
     public class DataMadhuntRoundStart : DataType<DataMadhuntRoundStart> {
-        static DataMadhuntRoundStart() => DataID = $"madhuntRoundStartV{Module.PROTOCOL_VERSION}";
+        static DataMadhuntRoundStart() => DataID = $"madhuntRoundStartV{MadhuntModule.PROTOCOL_VERSION}";
         
         public int MajorVersion, MinorVersion;
         public DataPlayerInfo StartPlayer;
@@ -83,37 +60,32 @@ namespace Celeste.Mod.Madhunt {
     }
 
     public class DataMadhuntRoundEnd : DataType<DataMadhuntRoundEnd> {
-        static DataMadhuntRoundEnd() => DataID = $"madhuntRoundEndV{Module.PROTOCOL_VERSION}";
+        static DataMadhuntRoundEnd() => DataID = $"madhuntRoundEndV{MadhuntModule.PROTOCOL_VERSION}";
 
         public DataPlayerInfo EndPlayer;
         public string RoundID;
-        public PlayerState WinningState;
+        public PlayerRole? WinningRole;
 
         public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerUpdate(EndPlayer) };
         public override void FixupMeta(DataContext ctx) => EndPlayer = Get<MetaPlayerUpdate>(ctx).Player;
 
         protected override void Read(CelesteNetBinaryReader reader) {
             RoundID = reader.ReadNetString();
-            WinningState = (PlayerState) reader.ReadByte();
+            if(reader.ReadBoolean()) WinningRole = (PlayerRole) reader.ReadByte();
         }
         
         protected override void Write(CelesteNetBinaryWriter writer) {
             writer.WriteNetString(RoundID);
-            writer.Write((byte) WinningState);
+            writer.Write(WinningRole.HasValue);
+            if(WinningRole.HasValue) writer.Write((byte) WinningRole);
         }
     }
 
     public class DataMadhuntStateUpdate : DataType<DataMadhuntStateUpdate> {
-        public struct RoundState {
-            public string roundID;
-            public int seed;
-            public PlayerState state;
-        }
-
-        static DataMadhuntStateUpdate() => DataID = $"madhuntStateUpdateV{Module.PROTOCOL_VERSION}";
+        static DataMadhuntStateUpdate() => DataID = $"madhuntStateUpdateV{MadhuntModule.PROTOCOL_VERSION}";
 
         public DataPlayerInfo Player;
-        public RoundState? State;
+        public PlayerState? State;
 
         public override MetaType[] GenerateMeta(DataContext ctx) => new MetaType[] { new MetaPlayerPublicState(Player), new MetaBoundRef(DataType<DataPlayerInfo>.DataID, Player?.ID ?? uint.MaxValue, true) };
 
@@ -124,10 +96,10 @@ namespace Celeste.Mod.Madhunt {
 
         protected override void Read(CelesteNetBinaryReader reader) {
             if(reader.ReadBoolean()) {
-                State = new RoundState() {
+                State = new PlayerState() {
                     roundID = reader.ReadNetString(), 
                     seed = reader.ReadInt32(),
-                    state = (PlayerState) reader.ReadByte()
+                    role = (PlayerRole) reader.ReadByte()
                 };
             } else State = null;
         }
@@ -137,7 +109,7 @@ namespace Celeste.Mod.Madhunt {
             if(State != null) {
                 writer.WriteNetString(State.Value.roundID);
                 writer.Write(State.Value.seed);
-                writer.Write((byte) State.Value.state);
+                writer.Write((byte) State.Value.role);
             }
         }
     }

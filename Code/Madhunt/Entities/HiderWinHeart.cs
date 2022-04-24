@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Monocle;
 
 namespace Celeste.Mod.Madhunt {
+    //TODO Rework this to use static hooks (+ add unlocking collectables)
     [CustomEntity("Madhunt/HiderWinHeart")]
     public class HiderWinHeart : HeartGem {
         private static readonly FieldInfo DASH_ATTACK_TIMER_FIELD = typeof(Player).GetField("dashAttackTimer", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -16,18 +17,18 @@ namespace Celeste.Mod.Madhunt {
         public HiderWinHeart(EntityData data, Vector2 offset) : base(data.Position + offset) {
             IsFake = false;
             On.Celeste.HeartGem.OnPlayer += onPlayerHook = (orig, heart, player) => {
-                if(heart == this && Module.MadhuntManager.State != PlayerState.HIDER && player.DashAttacking) {
+                if(heart == this && MadhuntModule.CurrentRound?.PlayerRole != PlayerRole.HIDER && player.DashAttacking) {
                     player.StateMachine.State = Player.StNormal;
                     DASH_ATTACK_TIMER_FIELD.SetValue(player, 0f);
                 }
                 orig(heart, player);
             };
             On.Celeste.HeartGem.Collect += collectHook = (orig, heart, player) => {
-                if(heart != this || Module.MadhuntManager.State == PlayerState.HIDER) orig(heart, player);
+                if(heart != this || MadhuntModule.CurrentRound?.PlayerRole == PlayerRole.HIDER) orig(heart, player);
             };
             On.Celeste.HeartGem.EndCutscene += endCutsceneHook = (orig, heart) => {
                 orig(heart);
-                if(heart == this) Module.MadhuntManager.TriggerGlobalWin(PlayerState.HIDER);  
+                if(heart == this) MadhuntModule.EndRound(PlayerRole.HIDER);  
             };
             On.Celeste.HeartGem.IsCompleteArea += completeAreaHook = (orig, heart, b) => {
                 if(heart != this) return orig(heart, b);
