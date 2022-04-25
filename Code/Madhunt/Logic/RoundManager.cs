@@ -155,6 +155,7 @@ namespace Celeste.Mod.Madhunt {
 
                 //Stop the round
                 curRound.Stop(curRound.PlayerRole == data.WinningRole);
+                curRound = null;
             });
         }
 
