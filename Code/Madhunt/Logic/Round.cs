@@ -219,7 +219,10 @@ namespace Celeste.Mod.Madhunt {
             if(ses == null) return false;
             sesSnapshot = new SessionSnapshot(ses);
             ses.Keys.Clear();
-            if(MadhuntModule.Session != null) MadhuntModule.Session.WonLastRound = false;
+            ses.Inventory.DreamDash = true;
+            if(MadhuntModule.Session != null) {
+                MadhuntModule.Session.WonLastRound = false;
+            }
             spawnedInArena = false;
             arenaLevel = LoadLevel(ses, Settings.arenaArea, Settings.spawnLevel);
 
@@ -243,7 +246,10 @@ namespace Celeste.Mod.Madhunt {
                 Session ses = arenaLevel.Session;
                 sesSnapshot.Apply(ses);
                 ses.RespawnPoint = Settings.lobbySpawnPoint;
-                if(MadhuntModule.Session != null) MadhuntModule.Session.WonLastRound = isWinner;
+                ses.Inventory.DreamDash = isWinner;
+                if(MadhuntModule.Session != null) {
+                    MadhuntModule.Session.WonLastRound = isWinner;
+                }
                 LoadLevel(ses, Settings.lobbyArea, Settings.lobbyLevel);
 
                 arenaLevel = null;
