@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
+
 using Microsoft.Xna.Framework;
 using MonoMod.RuntimeDetour;
 using Monocle;
