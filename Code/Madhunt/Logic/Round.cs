@@ -149,12 +149,11 @@ namespace Celeste.Mod.Madhunt {
         private static void GhostNameTagRenderHook(Action<GhostNameTag> orig, GhostNameTag nameTag) {
             //Don't render name tags of other roles (if disabled in the settings)
             MadhuntRound round = MadhuntModule.CurrentRound;
-            if(
-                round != null && round.Settings.hideNames &&
-                nameTag.Tracking is Ghost ghost && round.GetGhostState(ghost.PlayerInfo)?.State is var ghostState &&
-                ghostState?.role != round.State.role
-            ) return;
-
+            if(round != null && round.Settings.hideNames && nameTag.Tracking is Ghost ghost) {
+                PlayerState? ghostState = round.GetGhostState(ghost.PlayerInfo)?.State;
+                if(ghostState?.role != round.State.role) return;
+            }
+            
             orig(nameTag);
         }
 #endregion
