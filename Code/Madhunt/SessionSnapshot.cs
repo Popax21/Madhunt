@@ -43,6 +43,7 @@ namespace Celeste.Mod.Madhunt {
             counters = ses.Counters.Copy(c => c.Copy());
             doNotLoad = ses.DoNotLoad.Copy();
             keys = ses.Keys.Copy();
+            summitGems = ses.SummitGems.Copy();
         }
 
         public void Apply(Session ses) {
@@ -59,6 +60,7 @@ namespace Celeste.Mod.Madhunt {
             ses.Counters = counters.Copy(c => c.Copy());
             ses.DoNotLoad = doNotLoad.Copy();
             ses.Keys = keys.Copy();
+            ses.SummitGems = summitGems.Copy();
         }
     }
 }
