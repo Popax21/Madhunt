@@ -60,7 +60,8 @@ namespace Celeste.Mod.Madhunt {
 
         private void ExitHook(Level lvl, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow) {
             //Exit the round (if we're in one)
-            if(MadhuntModule.CurrentRound != null) MadhuntModule.EndRound(null);
+            curRound?.Stop(returnToLobby: false);
+            curRound = null;
         }
 
         private void NetClientInit(CelesteNetClient client) {

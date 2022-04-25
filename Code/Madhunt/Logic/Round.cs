@@ -1,13 +1,13 @@
 using System;
 using System.Linq;
-using System.Collections.Generic;
 using System.Reflection;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using MonoMod.RuntimeDetour;
 using Monocle;
 using Celeste.Mod.CelesteNet.Client;
 using Celeste.Mod.CelesteNet.DataTypes;
 using Celeste.Mod.CelesteNet.Client.Entities;
-using MonoMod.RuntimeDetour;
 
 namespace Celeste.Mod.Madhunt {
     public class MadhuntRound {
@@ -225,14 +225,20 @@ namespace Celeste.Mod.Madhunt {
             return true;
         }
 
-        internal void Stop(bool isWinner=false) {
+        internal void Stop(bool isWinner=false, bool returnToLobby=true) {
             Logger.Log(MadhuntModule.Name, $"Stopping Madhunt round {Settings.RoundID} in role {PlayerRole}{(isWinner ? " as winner" : string.Empty)}");
 
             //Unregister handlers
             NetClient.Data.UnregisterHandlersIn(this);
 
+            //Send player state packet to notify other clients of round exit
+            NetClient.Send(new DataMadhuntStateUpdate() {
+                Player = NetClient.PlayerInfo,
+                State = null
+            });
+
             //Return to lobby
-            if(arenaLevel != null) {
+            if(arenaLevel != null && returnToLobby) {
                 Session ses = arenaLevel.Session;
                 sesSnapshot.Apply(ses);
                 ses.RespawnPoint = Settings.lobbySpawnPoint;
