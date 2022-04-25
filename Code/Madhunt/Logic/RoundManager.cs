@@ -55,6 +55,7 @@ namespace Celeste.Mod.Madhunt {
         private void NetClientDisposed() {
             //Stop current round (if we have one)
             curRound?.Stop();
+            curRound = null;
         }
 
         public override void Update(GameTime gameTime) {
@@ -103,7 +104,11 @@ namespace Celeste.Mod.Madhunt {
     
         public void EndRound(PlayerRole? winnerRole) {
             if(curRound == null) return;
-            curRound.Stop(curRound.PlayerRole == winnerRole);
+            curRound.NetClient.SendAndHandle(new DataMadhuntRoundEnd() {
+                EndPlayer = curRound.NetClient.PlayerInfo,
+                RoundID = curRound.Settings.RoundID,
+                WinningRole = winnerRole
+            });
         }
 
         public bool IsRoundActive(string id) =>
