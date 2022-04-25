@@ -37,6 +37,9 @@ namespace Celeste.Mod.Madhunt {
             } else {
                 disposeEvt.AddEventHandler(null, netDisposeHook = (Action<object>) (_ => NetClientDisposed()));
             }
+            
+            Everest.Events.Level.OnLoadLevel += LevelLoadHook;
+            Everest.Events.Level.OnExit += ExitHook;
         }
 
         protected override void Dispose(bool disposing) {
@@ -45,6 +48,19 @@ namespace Celeste.Mod.Madhunt {
             //Remove hooks
             if(netDisposeHook != null) typeof(CelesteNetClientContext).GetEvent("OnDispose").RemoveEventHandler(null, netDisposeHook);
             netDisposeHook = null;
+            
+            Everest.Events.Level.OnLoadLevel -= LevelLoadHook;
+            Everest.Events.Level.OnExit -= ExitHook;
+        }
+        
+        private void LevelLoadHook(Level lvl, Player.IntroTypes intro, bool fromLoader) {
+            //Disable save and quit when in a round
+            if(MadhuntModule.CurrentRound != null) lvl.SaveQuitDisabled = true;
+        }
+
+        private void ExitHook(Level lvl, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow) {
+            //Exit the round (if we're in one)
+            if(MadhuntModule.CurrentRound != null) MadhuntModule.EndRound(null);
         }
 
         private void NetClientInit(CelesteNetClient client) {
