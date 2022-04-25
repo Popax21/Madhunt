@@ -1,12 +1,13 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-
+using System.Reflection;
 using Microsoft.Xna.Framework;
 using Monocle;
 using Celeste.Mod.CelesteNet.Client;
 using Celeste.Mod.CelesteNet.DataTypes;
 using Celeste.Mod.CelesteNet.Client.Entities;
+using MonoMod.RuntimeDetour;
 
 namespace Celeste.Mod.Madhunt {
     public class MadhuntRound {
@@ -14,7 +15,10 @@ namespace Celeste.Mod.Madhunt {
         private static Random SEED_RNG = new Random();
 
 #region Hooks
-        internal static void Init() {
+
+        private Hook ghostPlayerCollisionHook, ghostNameRenderHook;
+        
+        internal void Init() {
             Everest.Events.Level.OnLoadLevel += LevelLoadHook;
             Everest.Events.Level.OnExit += ExitHook;
             On.Celeste.Level.LoadNewPlayer += PlayerLoadHook;
@@ -22,9 +26,12 @@ namespace Celeste.Mod.Madhunt {
             On.Celeste.Level.EnforceBounds += EnforceBoundsHook;
             On.Celeste.Player.Die += DieHook;
             On.Celeste.Holdable.Pickup += PickupHook;
+            
+            ghostPlayerCollisionHook = new Hook(typeof(Ghost).GetMethod(nameof(Ghost.OnPlayer)), typeof(MadhuntRound).GetMethod(nameof(GhostPlayerCollisionHook), BindingFlags.NonPublic | BindingFlags.Instance));
+            ghostNameRenderHook = new Hook(typeof(GhostNameTag).GetMethod(nameof(GhostNameTag.Render)), typeof(MadhuntRound).GetMethod(nameof(GhostNameTagRenderHook), BindingFlags.NonPublic | BindingFlags.Instance));
         }
 
-        internal static void Uninit() {
+        internal void Uninit() {
             Everest.Events.Level.OnLoadLevel -= LevelLoadHook;
             Everest.Events.Level.OnExit -= ExitHook;
             On.Celeste.Level.LoadNewPlayer -= PlayerLoadHook;
@@ -32,19 +39,24 @@ namespace Celeste.Mod.Madhunt {
             On.Celeste.Level.EnforceBounds -= EnforceBoundsHook;
             On.Celeste.Player.Die -= DieHook;
             On.Celeste.Holdable.Pickup -= PickupHook;
+            
+            ghostPlayerCollisionHook.Dispose();
+            ghostPlayerCollisionHook = null;
+            ghostNameRenderHook.Dispose();
+            ghostNameRenderHook = null;
         }
 
-        private static void LevelLoadHook(Level lvl, Player.IntroTypes intro, bool fromLoader) {
+        private void LevelLoadHook(Level lvl, Player.IntroTypes intro, bool fromLoader) {
             //Disable save and quit when in a round
             if(MadhuntModule.CurrentRound != null) lvl.SaveQuitDisabled = true;
         }
 
-        private static void ExitHook(Level lvl, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow) {
+        private void ExitHook(Level lvl, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow) {
             //Exit the round (if we're in one)
             if(MadhuntModule.CurrentRound != null) MadhuntModule.EndRound(null);
         }
 
-        private static Player PlayerLoadHook(On.Celeste.Level.orig_LoadNewPlayer orig, Vector2 pos, PlayerSpriteMode smode) {
+        private Player PlayerLoadHook(On.Celeste.Level.orig_LoadNewPlayer orig, Vector2 pos, PlayerSpriteMode smode) {
             MadhuntRound round = MadhuntModule.CurrentRound;
             if(round == null) return orig(pos, smode);
 
@@ -75,7 +87,7 @@ namespace Celeste.Mod.Madhunt {
             return player;
         }
 
-        private static void ReloadHook(On.Celeste.Level.orig_Reload orig, Level level) {
+        private void ReloadHook(On.Celeste.Level.orig_Reload orig, Level level) {
             orig(level);
             if(MadhuntModule.CurrentRound == null) return;
 
@@ -83,7 +95,7 @@ namespace Celeste.Mod.Madhunt {
             MadhuntModule.CurrentRound.invincTimer = Calc.Max(MadhuntModule.CurrentRound.invincTimer, RESPAWN_INVINCIBILITY);
         }
 
-        private static void EnforceBoundsHook(On.Celeste.Level.orig_EnforceBounds orig, Level level, Player player) {
+        private void EnforceBoundsHook(On.Celeste.Level.orig_EnforceBounds orig, Level level, Player player) {
             orig(level, player);
             if(level.Transitioning || MadhuntModule.CurrentRound == null) return;
 
@@ -95,7 +107,7 @@ namespace Celeste.Mod.Madhunt {
             }
         }
 
-        private static PlayerDeadBody DieHook(On.Celeste.Player.orig_Die orig, Player player, Vector2 dir, bool evenIfInvincible, bool registerDeath) {
+        private PlayerDeadBody DieHook(On.Celeste.Player.orig_Die orig, Player player, Vector2 dir, bool evenIfInvincible, bool registerDeath) {
             PlayerDeadBody body = orig(player, dir, evenIfInvincible, registerDeath);
 
             //If a hider dies while in a golden mode round, make them a seeker
@@ -114,7 +126,7 @@ namespace Celeste.Mod.Madhunt {
             return body;
         }
 
-        private static bool PickupHook(On.Celeste.Holdable.orig_Pickup orig, Holdable holdable, Player player) {
+        private bool PickupHook(On.Celeste.Holdable.orig_Pickup orig, Holdable holdable, Player player) {
             //Does the holdable belong to a ghost?
             MadhuntRound round = MadhuntModule.CurrentRound;
             if(round == null || !round.Settings.tagMode || !(holdable.Entity is Ghost ghost)) return orig(holdable, player);
@@ -127,7 +139,7 @@ namespace Celeste.Mod.Madhunt {
             return false;
         }
 
-        private static void GhostPlayerCollisionHook(Action<Ghost, Player> orig, Ghost ghost, Player player) {
+        private void GhostPlayerCollisionHook(Action<Ghost, Player> orig, Ghost ghost, Player player) {
             //Check if we collided with a seeker ghost as a hider
             MadhuntRound round = MadhuntModule.CurrentRound;
             if(round != null && round.Settings.tagMode && round.GetGhostState(ghost.PlayerInfo) is var ghostState && ghostState?.State?.roundID == round.Settings.RoundID) {
@@ -146,6 +158,17 @@ namespace Celeste.Mod.Madhunt {
                     orig(ghost, player);
                 }
             } else orig(ghost, player);
+        }
+        
+        private void GhostNameTagRenderHook(Action<GhostNameTag> orig, GhostNameTag nameTag) {
+            //Don't render name tags of other roles (if disabled in the settings)
+            MadhuntRound round = MadhuntModule.CurrentRound;
+            if(round != null && round.Settings.hideNames && 
+               nameTag.Tracking is Ghost ghost && GetGhostState(ghost.PlayerInfo)?.State is var ghostState &&
+               ghostState?.roundID == round.Settings.RoundID && ghostState.Equals(State)
+              ) return;
+
+            orig(nameTag);
         }
 #endregion
 
@@ -173,6 +196,9 @@ namespace Celeste.Mod.Madhunt {
 
             //Register handlers
             NetClient.Data.RegisterHandlersIn(this);
+            
+            //Register hooks
+            this.Init();
 
             //Start seed wait
             Logger.Log(MadhuntModule.Name, $"Starting Madhunt round {Settings.RoundID} with seed {playerSeed}");
@@ -221,6 +247,9 @@ namespace Celeste.Mod.Madhunt {
 
             //Unregister handlers
             NetClient.Data.UnregisterHandlersIn(this);
+            
+            //Unregister hooks
+            this.Uninit();
 
             //Return to lobby
             if(arenaLevel != null) {
