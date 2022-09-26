@@ -28,7 +28,7 @@ namespace Celeste.Mod.Madhunt {
         
         public static readonly Color COLOR = Calc.HexToColor("#521382");
 
-        public TransitionBooster(Vector2 pos) : base(pos, COLOR) {}
+        public TransitionBooster(Vector2 pos) : base(pos, COLOR, true) {}
         public TransitionBooster(EntityData data, Vector2 offset) : this(data.Position + offset) {
             TargetDashDir = (Direction) data.Int("targetDir");
             TargetArea = data.Attr("targetArea").ParseAreaKey();
@@ -36,7 +36,7 @@ namespace Celeste.Mod.Madhunt {
             TargetID = data.Int("targetID");
         }
 
-        protected override BoostType? OnBoost(Player player) => BoostType.RED_BOOST;
+        protected override BoostType? OnPlayerEnter(Player player) => BoostType.RED_BOOST;
 
         public Direction? TargetDashDir { get; }
         public AreaKey TargetArea { get; }
